@@ -115,6 +115,8 @@ if ($_SERVER["REQUEST_METHOD"] == "post")
      <input type="submit" value="login now" name="submit" class="btn" id="loginBtn" <?php if($is_locked) echo 'disabled'; ?>>
 
       <p>Don't have an account? <a href="register.php">Register now</a></p>
+      <p><a href="forgot_password.php">Forgot your password?</a></p>
+
    </form>
 
 </section>
