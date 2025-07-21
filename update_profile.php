@@ -172,7 +172,7 @@ if(isset($_POST['submit'])){
 <!-- Question 3 -->
 <select name="security_question_3" class="box" required>
    <option value="">Select Question 3</option>
-   <option value="What is your pet's name?" <?= ($fetch_profile['security_question_3'] == 'What is your pet\'s name?') ? 'selected' : '' ?>>What is your pet's name?</option>
+   <option value="What is your pets name?" <?= ($fetch_profile['security_question_3'] == 'What is your pets name?') ? 'selected' : '' ?>>What is your pet's name?</option>
    <option value="What school did you go to?" <?= ($fetch_profile['security_question_3'] == 'What school did you go to?') ? 'selected' : '' ?>>What school did you go to?</option>
    <option value="Who is your childhood hero?" <?= ($fetch_profile['security_question_3'] == 'Who is your childhood hero?') ? 'selected' : '' ?>>Who is your childhood hero?</option>
 </select>
