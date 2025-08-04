@@ -23,6 +23,16 @@ if(isset($_POST['update_payment'])){
 
 }
 
+if(isset($_POST['update_delivery_date'])){
+
+   $order_id = $_POST['order_id'];
+   $expected_delivery_date = $_POST['expected_delivery_date'];
+   $update_delivery = $conn->prepare("UPDATE `orders` SET expected_delivery_date = ? WHERE id = ?");
+   $update_delivery->execute([$expected_delivery_date, $order_id]);
+   $message[] = 'Delivery date updated!';
+
+}
+
 if(isset($_GET['delete'])){
    $delete_id = $_GET['delete'];
    
@@ -86,23 +96,36 @@ if(isset($_GET['delete'])){
       <p> total products : <span><?= $fetch_orders['total_products']; ?></span> </p>
       <p> total price : <span>&#8369;<?= $fetch_orders['total_price']; ?>/-</span> </p>
       <p> payment method : <span><?= $fetch_orders['method']; ?></span> </p>
+      <p> expected delivery : <span style="color: <?= empty($fetch_orders['expected_delivery_date']) ? '#e74c3c' : '#27ae60'; ?>;">
+         <?= empty($fetch_orders['expected_delivery_date']) ? 'Not set' : date('F d, Y', strtotime($fetch_orders['expected_delivery_date'])); ?>
+      </span> </p>
       <?php if (!empty($fetch_orders['design_file'])): ?>
       <p> design file : <span><a href="../uploaded_designs/<?= $fetch_orders['design_file']; ?>" target="_blank" style="color: #007bff; text-decoration: underline;">View Design</a></span> </p>
       <?php else: ?>
       <p> design file : <span>No design uploaded</span> </p>
       <?php endif; ?>
-      <form action="" method="POST">
+      
+      <!-- Payment Status Update Form -->
+      <form action="" method="POST" class="status-form">
          <input type="hidden" name="order_id" value="<?= $fetch_orders['id']; ?>">
          <select name="payment_status" class="drop-down">
             <option value="" selected disabled><?= $fetch_orders['payment_status']; ?></option>
             <option value="Pending">Pending</option>
             <option value="To received">To received</option>
-            <option value=">Delivered">Delivered</option>
+            <option value="Delivered">Delivered</option>
          </select>
          <div class="flex-btn">
-            <input type="submit" value="update" class="btn" name="update_payment">
-            <a href="placed_orders.php?delete=<?= $fetch_orders['id']; ?>" class="delete-btn" onclick="return confirm('delete this order?');">delete</a>
+            <input type="submit" value="Update Status" class="btn" name="update_payment">
          </div>
+      </form>
+      <br>
+      <!-- Delivery Date Update Form -->
+      <form action="" method="POST" class="delivery-form">
+         <input type="hidden" name="order_id" value="<?= $fetch_orders['id']; ?>">
+         <input type="date" name="expected_delivery_date" value="<?= $fetch_orders['expected_delivery_date']; ?>" 
+                min="<?= date('Y-m-d'); ?>" class="box" placeholder="Select delivery date">
+         <input type="submit" value="Update Delivery Date" class="btn" name="update_delivery_date">
+         <a href="placed_orders.php?delete=<?= $fetch_orders['id']; ?>" class="delete-btn" onclick="return confirm('delete this order?');">Delete</a>
       </form>
    </div>
    <?php

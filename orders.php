@@ -62,6 +62,9 @@ if(isset($_SESSION['user_id'])){
       <p>Payment method : <span><?= $fetch_orders['method']; ?></span></p>
       <p>Your orders : <span><?= $fetch_orders['total_products']; ?></span></p>
       <p>Total price : <span>&#8369;<?= $fetch_orders['total_price']; ?></span></p>
+      <p>Expected delivery : <span style="color: <?= empty($fetch_orders['expected_delivery_date']) ? '#e74c3c' : '#27ae60'; ?>; font-weight: bold;">
+         <?= empty($fetch_orders['expected_delivery_date']) ? 'Not set yet' : date('F d, Y', strtotime($fetch_orders['expected_delivery_date'])); ?>
+      </span></p>
       <?php if (!empty($fetch_orders['design_file'])): ?>
       <p>Design file : <span><a href="uploaded_designs/<?= $fetch_orders['design_file']; ?>" target="_blank" style="color: #007bff; text-decoration: underline;">View Your Design</a></span></p>
       <?php else: ?>

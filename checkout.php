@@ -42,6 +42,7 @@ if (isset($_POST['submit'])) {
    $total_products = $_POST['total_products'];
    $total_price = $_POST['total_price'];
    $gcash_ref = !empty($_POST['gcash_ref']) ? filter_var($_POST['gcash_ref'], FILTER_SANITIZE_STRING) : null;
+   $expected_delivery_date = !empty($_POST['expected_delivery_date']) ? $_POST['expected_delivery_date'] : null;
 
    // Handle design file upload
    $design_file = null;
@@ -87,8 +88,8 @@ if (isset($_POST['submit'])) {
       if ($address == '') {
          $message[] = 'please add your address!';
       } else {
-         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref, design_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref, $design_file]);
+         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref, design_file, expected_delivery_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref, $design_file, $expected_delivery_date]);
 
          // Only delete cart if it's not a direct order
          if (!$direct_order) {
@@ -201,6 +202,11 @@ if (isset($_POST['submit'])) {
             <label style="font-size: 18px;">GCash Reference Number:</label>
             <input type="text" name="gcash_ref" id="gcash-ref" class="box">
          </div>
+
+         <h3>Expected Delivery Date</h3>
+         <input type="date" name="expected_delivery_date" class="box" min="<?= date('Y-m-d', strtotime('+1 day')); ?>" 
+                style="font-size: 1.8rem; padding: 1rem;">
+         <p style="font-size: 1.4rem; color: #666; margin-top: 5px;">Select your preferred delivery date (minimum 1 day from today)</p>
 
          <h3 style="text-align:center;">Do you already have a design?</h3>
 <div style="display: flex; justify-content: center; align-items: center; gap: 40px; margin: 15px 0;">
