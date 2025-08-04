@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2025 at 03:02 AM
+-- Generation Time: Aug 04, 2025 at 05:18 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -124,7 +124,10 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `user_id`, `product_id`, `type`, `quantity`, `size`, `price`, `design_file`, `name`, `number`, `email`, `method`, `address`, `total_products`, `total_price`, `gcash_ref`, `placed_on`, `payment_status`) VALUES
-(13, 21, NULL, NULL, NULL, NULL, NULL, NULL, 'Glenard Pagurayan', '09787897987', 'glen@gmail.com', 'gcash', 'asd, qwe1, 23, qwe', 'Sample (1000 x 1)', 1000.00, '12313', '2025-07-19 15:36:43', 'pending');
+(14, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:06:55', 'pending'),
+(15, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:07:32', 'pending'),
+(16, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 1)', 200.00, NULL, '2025-08-04 23:08:26', 'pending'),
+(17, 30, NULL, NULL, NULL, NULL, NULL, '6890ce75c30d2_160107100400-monkey-selfie.jpg', 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 4)', 800.00, NULL, '2025-08-04 23:15:01', 'pending');
 
 -- --------------------------------------------------------
 
@@ -145,7 +148,10 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `category`, `price`, `image`) VALUES
-(49, 'Sample', 'main dish', 1000, '471919621_1955445661627792_101257505016471484_n-removebg-preview.png');
+(50, 'Sample A', 'main dish', 200, '160107100400-monkey-selfie.jpg'),
+(51, 'Sample B', 'fast food', 200, '160107100400-monkey-selfie.jpg'),
+(52, 'Sample C', 'drinks', 200, '160107100400-monkey-selfie.jpg'),
+(53, 'Sample D', 'desserts', 200, '160107100400-monkey-selfie.jpg');
 
 -- --------------------------------------------------------
 
@@ -174,15 +180,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `number`, `password`, `address`, `valid_id`, `security_question_1`, `security_answer_1`, `security_question_2`, `security_answer_2`, `security_question_3`, `security_answer_3`) VALUES
-(21, 'Glenard Pagurayan', 'glen@gmail.com', '09787897987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', 'asd, qwe1, 23, qwe', 'uploaded_ids/687b4500dae6b_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '123', 'What is your dream job?', '123', 'What is your pet&#39;s name?', '123'),
-(22, 'Glenard Pagurayan', 'glenard3@gmail.com', '09989797987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687b515f22ed8_471919621_1955445661627792_101257505016471484_n.jpg', NULL, NULL, NULL, NULL, NULL, NULL),
-(23, 'Glenard Pagurayan', 'glennnn@gmail.com', '09778897987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687b58fea0334_515440618_122223573218088074_6270732539776101761_n.jpg', NULL, NULL, NULL, NULL, NULL, NULL),
-(24, 'Sample', 'sam@gmail.com', '09797898798', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8889e1274_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What is your dream job?', '1234', 'Who is your childhood hero?', '1234'),
-(25, 'samsam', 'sample@gmail.com', '1234', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d896fcc655_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
-(26, 'asdwqe', 'fff@gmail.com', '09779879779', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8a0ed9633_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
-(27, 'fasfasfa', 'ddd@gmail.com', '09797987987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8a837ca9d_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What is your pet&#39;s name?', '1234'),
-(28, 'asd', 'ssss@gmail.com', '12341231', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8b2d34ded_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
-(29, 'dddd', 'www@gmail.com', '1234123', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8b54aa1b8_471919621_1955445661627792_101257505016471484_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What is your pets name?', '11234');
+(30, 'Lucky Padua', 'lucky@123gmail.com', '09798798798', 'b7c33a5c0fe5f6e122894ac627aed51c839f3104', 'Sample, Sample, Sample, Sample', 'uploaded_ids/6890c3fcd8d0b_160107100400-monkey-selfie.jpg', 'What is your favorite movie?', 'sample', 'What is your dream job?', 'sample', 'What is your pet&#39;s name?', 'sample');
 
 --
 -- Indexes for dumped tables
@@ -238,7 +236,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -250,19 +248,19 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
