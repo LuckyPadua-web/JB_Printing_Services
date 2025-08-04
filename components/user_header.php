@@ -14,7 +14,7 @@ if(isset($message)){
 <header class="header">
 
    <section class="flex">
-      <img src="images/JB/sticker zone logo 01.png" >
+      <img src="images/JB/Logo-A.png" style="height: 50px; width: 50px; object-fit: contain;">
       <a href="index.php" class="logo" >JB Printing Services</a>
 
       <nav class="navbar">
