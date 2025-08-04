@@ -62,6 +62,11 @@ if(isset($_SESSION['user_id'])){
       <p>Payment method : <span><?= $fetch_orders['method']; ?></span></p>
       <p>Your orders : <span><?= $fetch_orders['total_products']; ?></span></p>
       <p>Total price : <span>&#8369;<?= $fetch_orders['total_price']; ?></span></p>
+      <?php if (!empty($fetch_orders['design_file'])): ?>
+      <p>Design file : <span><a href="uploaded_designs/<?= $fetch_orders['design_file']; ?>" target="_blank" style="color: #007bff; text-decoration: underline;">View Your Design</a></span></p>
+      <?php else: ?>
+      <p>Design file : <span>No design uploaded</span></p>
+      <?php endif; ?>
       <p> Payment status : <span style="color:<?php if($fetch_orders['payment_status'] == 'pending'){ echo 'red'; }else{ echo 'green'; }; ?>"><?= $fetch_orders['payment_status']; ?></span> </p>
    </div>
    <?php

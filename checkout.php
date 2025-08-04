@@ -17,6 +17,22 @@ if ($select_profile->rowCount() > 0) {
    $fetch_profile = $select_profile->fetch(PDO::FETCH_ASSOC);
 }
 
+// Handle direct product ordering from quick view
+$direct_order = false;
+$direct_product = null;
+if (isset($_GET['pid']) && isset($_GET['qty'])) {
+   $direct_order = true;
+   $pid = filter_var($_GET['pid'], FILTER_SANITIZE_NUMBER_INT);
+   $qty = filter_var($_GET['qty'], FILTER_SANITIZE_NUMBER_INT);
+   
+   $select_product = $conn->prepare("SELECT * FROM `products` WHERE id = ?");
+   $select_product->execute([$pid]);
+   if ($select_product->rowCount() > 0) {
+      $direct_product = $select_product->fetch(PDO::FETCH_ASSOC);
+      $direct_product['quantity'] = $qty;
+   }
+}
+
 if (isset($_POST['submit'])) {
    $name = filter_var($_POST['name'], FILTER_SANITIZE_STRING);
    $number = filter_var($_POST['number'], FILTER_SANITIZE_STRING);
@@ -27,23 +43,63 @@ if (isset($_POST['submit'])) {
    $total_price = $_POST['total_price'];
    $gcash_ref = !empty($_POST['gcash_ref']) ? filter_var($_POST['gcash_ref'], FILTER_SANITIZE_STRING) : null;
 
-   $check_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
-   $check_cart->execute([$user_id]);
+   // Handle design file upload
+   $design_file = null;
+   if (isset($_POST['design_option']) && $_POST['design_option'] == 'yes' && isset($_FILES['design_file']) && $_FILES['design_file']['error'] == 0) {
+      $design_filename = $_FILES['design_file']['name'];
+      $design_filename = filter_var($design_filename, FILTER_SANITIZE_STRING);
+      $design_size = $_FILES['design_file']['size'];
+      $design_tmp_name = $_FILES['design_file']['tmp_name'];
+      
+      // Get file extension
+      $file_extension = strtolower(pathinfo($design_filename, PATHINFO_EXTENSION));
+      $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+      
+      // Validate file extension
+      if (!in_array($file_extension, $allowed_extensions)) {
+         $message[] = 'Invalid file format. Only JPG, JPEG, PNG, WEBP, and PDF files are allowed.';
+      } else if ($design_size > 5000000) {
+         $message[] = 'Design file size is too large (maximum 5MB allowed)';
+      } else {
+         // Create unique filename to prevent conflicts
+         $unique_filename = uniqid() . '_' . $design_filename;
+         $design_folder = 'uploaded_designs/' . $unique_filename;
+         
+         if (move_uploaded_file($design_tmp_name, $design_folder)) {
+            $design_file = $unique_filename;
+         } else {
+            $message[] = 'Failed to upload design file';
+         }
+      }
+   }
 
-   if ($check_cart->rowCount() > 0) {
+   // Check if it's a direct order or cart order
+   $has_items = false;
+   if ($direct_order && $direct_product) {
+      $has_items = true;
+   } else {
+      $check_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
+      $check_cart->execute([$user_id]);
+      $has_items = $check_cart->rowCount() > 0;
+   }
+
+   if ($has_items) {
       if ($address == '') {
          $message[] = 'please add your address!';
       } else {
-         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref]);
+         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref, design_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref, $design_file]);
 
-         $delete_cart = $conn->prepare("DELETE FROM `cart` WHERE user_id = ?");
-         $delete_cart->execute([$user_id]);
+         // Only delete cart if it's not a direct order
+         if (!$direct_order) {
+            $delete_cart = $conn->prepare("DELETE FROM `cart` WHERE user_id = ?");
+            $delete_cart->execute([$user_id]);
+         }
 
          $message[] = 'Order placed successfully!';
       }
    } else {
-      $message[] = 'Your cart is empty';
+      $message[] = 'No items to order';
    }
 }
 ?>
@@ -71,30 +127,45 @@ if (isset($_POST['submit'])) {
    <form action="" method="post" enctype="multipart/form-data">
 
       <div class="cart-items">
-         <h3>Cart Items</h3>
+         <h3>Order Items</h3>
          <?php
          $grand_total = 0;
          $cart_items = [];
          $total_products = '';
-         $select_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
-         $select_cart->execute([$user_id]);
-         if ($select_cart->rowCount() > 0) {
-            while ($fetch_cart = $select_cart->fetch(PDO::FETCH_ASSOC)) {
-               $cart_items[] = $fetch_cart['name'] . ' (' . $fetch_cart['price'] . ' x ' . $fetch_cart['quantity'] . ')';
-               $grand_total += ($fetch_cart['price'] * $fetch_cart['quantity']);
-               ?>
-               <p><span class="name"><?= htmlspecialchars($fetch_cart['name']); ?></span>
-                  <span class="price">&#8369;<?= $fetch_cart['price']; ?> x <?= $fetch_cart['quantity']; ?></span></p>
+         
+         if ($direct_order && $direct_product) {
+            // Handle direct product order
+            $cart_items[] = $direct_product['name'] . ' (₱' . $direct_product['price'] . ' x ' . $direct_product['quantity'] . ')';
+            $grand_total = ($direct_product['price'] * $direct_product['quantity']);
+            ?>
+            <p><span class="name"><?= htmlspecialchars($direct_product['name']); ?></span>
+               <span class="price">&#8369;<?= $direct_product['price']; ?> x <?= $direct_product['quantity']; ?></span></p>
             <?php
-            }
             $total_products = implode(', ', $cart_items);
          } else {
-            echo '<p class="empty">Your cart is empty!</p>';
+            // Handle cart orders
+            $select_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
+            $select_cart->execute([$user_id]);
+            if ($select_cart->rowCount() > 0) {
+               while ($fetch_cart = $select_cart->fetch(PDO::FETCH_ASSOC)) {
+                  $cart_items[] = $fetch_cart['name'] . ' (₱' . $fetch_cart['price'] . ' x ' . $fetch_cart['quantity'] . ')';
+                  $grand_total += ($fetch_cart['price'] * $fetch_cart['quantity']);
+                  ?>
+                  <p><span class="name"><?= htmlspecialchars($fetch_cart['name']); ?></span>
+                     <span class="price">&#8369;<?= $fetch_cart['price']; ?> x <?= $fetch_cart['quantity']; ?></span></p>
+               <?php
+               }
+               $total_products = implode(', ', $cart_items);
+            } else {
+               echo '<p class="empty">Your cart is empty!</p>';
+            }
          }
          ?>
          <p class="grand-total"><span class="name">Grand total :</span>
             <span class="price">&#8369;<?= $grand_total; ?></span></p>
+         <?php if (!$direct_order): ?>
          <a href="cart.php" class="btn">View Cart</a>
+         <?php endif; ?>
       </div>
 
       <input type="hidden" name="total_products" value="<?= htmlspecialchars($total_products); ?>">
@@ -149,8 +220,9 @@ if (isset($_POST['submit'])) {
    <label for="design_file" style="display: block; font-size: 2rem; margin-bottom: 15px;">
       Upload Your Design
    </label>
-   <input type="file" name="design_file" id="design_file" accept="image/*,application/pdf" 
+   <input type="file" name="design_file" id="design_file" accept="image/jpg, image/jpeg, image/png, image/webp, application/pdf" 
       style="padding: 15px; font-size: 2rem; border: 2px solid #333; border-radius: 8px; width: 80%; max-width: 400px;">
+   <p style="font-size: 1.4rem; color: #666; margin-top: 10px;">Accepted formats: JPG, JPEG, PNG, WEBP, PDF (Max size: 5MB)</p>
 </div>
 
 

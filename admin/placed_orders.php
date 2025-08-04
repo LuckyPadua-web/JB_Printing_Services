@@ -25,6 +25,17 @@ if(isset($_POST['update_payment'])){
 
 if(isset($_GET['delete'])){
    $delete_id = $_GET['delete'];
+   
+   // Get the design file name before deleting the order
+   $get_design_file = $conn->prepare("SELECT design_file FROM `orders` WHERE id = ?");
+   $get_design_file->execute([$delete_id]);
+   $design_data = $get_design_file->fetch(PDO::FETCH_ASSOC);
+   
+   // Delete the design file if it exists
+   if (!empty($design_data['design_file']) && file_exists('../uploaded_designs/' . $design_data['design_file'])) {
+      unlink('../uploaded_designs/' . $design_data['design_file']);
+   }
+   
    $delete_order = $conn->prepare("DELETE FROM `orders` WHERE id = ?");
    $delete_order->execute([$delete_id]);
    header('location:placed_orders.php');
@@ -75,6 +86,11 @@ if(isset($_GET['delete'])){
       <p> total products : <span><?= $fetch_orders['total_products']; ?></span> </p>
       <p> total price : <span>&#8369;<?= $fetch_orders['total_price']; ?>/-</span> </p>
       <p> payment method : <span><?= $fetch_orders['method']; ?></span> </p>
+      <?php if (!empty($fetch_orders['design_file'])): ?>
+      <p> design file : <span><a href="../uploaded_designs/<?= $fetch_orders['design_file']; ?>" target="_blank" style="color: #007bff; text-decoration: underline;">View Design</a></span> </p>
+      <?php else: ?>
+      <p> design file : <span>No design uploaded</span> </p>
+      <?php endif; ?>
       <form action="" method="POST">
          <input type="hidden" name="order_id" value="<?= $fetch_orders['id']; ?>">
          <select name="payment_status" class="drop-down">
