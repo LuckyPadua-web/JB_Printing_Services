@@ -33,3 +33,8 @@ document.querySelectorAll('input[type="number"]').forEach((numberInput) => {
       numberInput.value = numberInput.value.slice(0, numberInput.maxLength);
   };
 });
+
+function showUpload() {
+   document.getElementById('upload-design').style.display = 'block';
+}
+

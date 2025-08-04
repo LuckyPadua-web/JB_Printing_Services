@@ -28,12 +28,5 @@
          
       </div>
 
-   </section> 
-   <div class="credit">
-  
- 
-   &copy; copyright @ <?= date('Y'); ?> by <span>CSU Piat [IT Students]</span> | all rights reserved!
-   </div>
-   
-
+   </section>
 </footer>

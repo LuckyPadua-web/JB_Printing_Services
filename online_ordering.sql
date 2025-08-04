@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 19, 2025 at 09:37 AM
+-- Generation Time: Jul 21, 2025 at 03:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -160,15 +160,29 @@ CREATE TABLE `users` (
   `number` varchar(11) NOT NULL,
   `password` varchar(50) NOT NULL,
   `address` varchar(500) NOT NULL,
-  `valid_id` varchar(255) DEFAULT NULL
+  `valid_id` varchar(255) DEFAULT NULL,
+  `security_question_1` varchar(255) DEFAULT NULL,
+  `security_answer_1` varchar(255) DEFAULT NULL,
+  `security_question_2` varchar(255) DEFAULT NULL,
+  `security_answer_2` varchar(255) DEFAULT NULL,
+  `security_question_3` varchar(255) DEFAULT NULL,
+  `security_answer_3` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `number`, `password`, `address`, `valid_id`) VALUES
-(21, 'Glenard Pagurayan', 'glen@gmail.com', '09787897987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', 'asd, qwe1, 23, qwe', 'uploaded_ids/687b4500dae6b_515440618_122223573218088074_6270732539776101761_n.jpg');
+INSERT INTO `users` (`id`, `name`, `email`, `number`, `password`, `address`, `valid_id`, `security_question_1`, `security_answer_1`, `security_question_2`, `security_answer_2`, `security_question_3`, `security_answer_3`) VALUES
+(21, 'Glenard Pagurayan', 'glen@gmail.com', '09787897987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', 'asd, qwe1, 23, qwe', 'uploaded_ids/687b4500dae6b_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '123', 'What is your dream job?', '123', 'What is your pet&#39;s name?', '123'),
+(22, 'Glenard Pagurayan', 'glenard3@gmail.com', '09989797987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687b515f22ed8_471919621_1955445661627792_101257505016471484_n.jpg', NULL, NULL, NULL, NULL, NULL, NULL),
+(23, 'Glenard Pagurayan', 'glennnn@gmail.com', '09778897987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687b58fea0334_515440618_122223573218088074_6270732539776101761_n.jpg', NULL, NULL, NULL, NULL, NULL, NULL),
+(24, 'Sample', 'sam@gmail.com', '09797898798', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8889e1274_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What is your dream job?', '1234', 'Who is your childhood hero?', '1234'),
+(25, 'samsam', 'sample@gmail.com', '1234', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d896fcc655_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
+(26, 'asdwqe', 'fff@gmail.com', '09779879779', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8a0ed9633_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
+(27, 'fasfasfa', 'ddd@gmail.com', '09797987987', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8a837ca9d_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What is your pet&#39;s name?', '1234'),
+(28, 'asd', 'ssss@gmail.com', '12341231', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8b2d34ded_515440618_122223573218088074_6270732539776101761_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What school did you go to?', '1234'),
+(29, 'dddd', 'www@gmail.com', '1234123', '7110eda4d09e062aa5e4a390b0a572ac0d2c0220', '', 'uploaded_ids/687d8b54aa1b8_471919621_1955445661627792_101257505016471484_n.jpg', 'What is your favorite movie?', '1234', 'What city were you born in?', '1234', 'What is your pets name?', '11234');
 
 --
 -- Indexes for dumped tables
@@ -248,7 +262,7 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

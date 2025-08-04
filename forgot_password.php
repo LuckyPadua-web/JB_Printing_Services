@@ -59,6 +59,24 @@ if (isset($_POST['reset_password'])) {
    <meta charset="UTF-8">
    <title>Forgot Password</title>
    <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <style>
+      .password-container {
+         position: relative;
+      }
+      .password-container input {
+         width: 100%;
+         padding-right: 40px;
+      }
+      .toggle-eye {
+         position: absolute;
+         top: 50%;
+         right: 10px;
+         transform: translateY(-50%);
+         cursor: pointer;
+         color: #555;
+      }
+   </style>
 </head>
 <body>
 
@@ -73,24 +91,31 @@ if (isset($_POST['reset_password'])) {
       <?php endforeach; ?>
 
       <?php if($success): ?>
-         <label style="font-size: 18px; font-weight: bold;"> <div style="color: green;"><?= $success ?></div></label>
+         <label style="font-size: 18px; font-weight: bold;"><div style="color: green;"><?= $success ?></div></label>
       <?php endif; ?>
 
       <?php if (!$show_questions): ?>
          <input type="email" name="email" placeholder="Enter your email" class="box" required>
          <input type="submit" name="check_email" value="Next" class="btn">
       <?php else: ?>
-        <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_1'] ?></label>
+         <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_1'] ?></label>
          <input type="text" name="answer1" class="box" required>
 
-       <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_2'] ?></label>
+         <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_2'] ?></label>
          <input type="text" name="answer2" class="box" required>
 
-        <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_3'] ?></label>
+         <label style="font-size: 18px; font-weight: bold;"><?= $user['security_question_3'] ?></label>
          <input type="text" name="answer3" class="box" required>
 
-         <input type="password" name="new_pass" placeholder="Enter new password" class="box" required>
-         <input type="password" name="confirm_pass" placeholder="Confirm new password" class="box" required>
+         <div class="password-container">
+            <input type="password" id="new_pass" name="new_pass" placeholder="Enter new password" class="box" required>
+            <i class="fa-solid fa-eye toggle-eye" onclick="toggleVisibility('new_pass', this)"></i>
+         </div>
+
+         <div class="password-container">
+            <input type="password" id="confirm_pass" name="confirm_pass" placeholder="Confirm new password" class="box" required>
+            <i class="fa-solid fa-eye toggle-eye" onclick="toggleVisibility('confirm_pass', this)"></i>
+         </div>
 
          <input type="submit" name="reset_password" value="Reset Password" class="btn">
       <?php endif; ?>
@@ -98,6 +123,22 @@ if (isset($_POST['reset_password'])) {
 </section>
 
 <?php include 'components/footer.php'; ?>
+
+<script>
+function toggleVisibility(fieldId, icon) {
+   const field = document.getElementById(fieldId);
+   if (field.type === "password") {
+      field.type = "text";
+      icon.classList.remove("fa-eye");
+      icon.classList.add("fa-eye-slash");
+   } else {
+      field.type = "password";
+      icon.classList.remove("fa-eye-slash");
+      icon.classList.add("fa-eye");
+   }
+}
+</script>
+
 <script src="js/script.js"></script>
 </body>
 </html>

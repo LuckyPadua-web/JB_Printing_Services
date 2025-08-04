@@ -63,7 +63,7 @@ include 'components/add_cart.php';
       <?php
             }
          }else{
-            echo '<p class="empty">Wala pang product</p>';
+            echo '<p class="empty">No Products Available</p>';
          }
       ?>
 

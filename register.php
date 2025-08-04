@@ -1,5 +1,4 @@
 <?php
-
 include 'components/connect.php';
 
 session_start();
@@ -18,7 +17,6 @@ if (isset($_POST['submit'])) {
    $pass = filter_var(sha1($_POST['pass']), FILTER_SANITIZE_STRING);
    $cpass = filter_var(sha1($_POST['cpass']), FILTER_SANITIZE_STRING);
 
-   // Security questions
    $sec_q1 = filter_var($_POST['security_question_1'], FILTER_SANITIZE_STRING);
    $sec_a1 = filter_var($_POST['security_answer_1'], FILTER_SANITIZE_STRING);
    $sec_q2 = filter_var($_POST['security_question_2'], FILTER_SANITIZE_STRING);
@@ -26,14 +24,12 @@ if (isset($_POST['submit'])) {
    $sec_q3 = filter_var($_POST['security_question_3'], FILTER_SANITIZE_STRING);
    $sec_a3 = filter_var($_POST['security_answer_3'], FILTER_SANITIZE_STRING);
 
-   // File upload
    $valid_id = $_FILES['valid_id']['name'];
    $valid_id_tmp = $_FILES['valid_id']['tmp_name'];
    $valid_id_renamed = uniqid() . '_' . basename($valid_id);
    $valid_id_folder = 'uploaded_ids/' . $valid_id_renamed;
    move_uploaded_file($valid_id_tmp, $valid_id_folder);
 
-   // Check if email or number already exists
    $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? OR number = ?");
    $select_user->execute([$email, $number]);
 
@@ -53,12 +49,10 @@ if (isset($_POST['submit'])) {
          if ($select_user->rowCount() > 0) {
             $_SESSION['user_id'] = $row['id'];
             $message[] = 'Registration successful! You can now log in.';
-            //header('location:register.php');
          }
       }
    }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -69,12 +63,25 @@ if (isset($_POST['submit'])) {
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Register</title>
 
-   <!-- font awesome cdn link -->
+   <!-- Font Awesome for eye icon -->
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 
-   <!-- custom css file link -->
+   <!-- Custom CSS -->
    <link rel="stylesheet" href="css/style.css">
 
+   <style>
+      .password-field {
+         position: relative;
+      }
+      .password-field .toggle-eye {
+         position: absolute;
+         right: 15px;
+         top: 50%;
+         transform: translateY(-50%);
+         cursor: pointer;
+         color: #555;
+      }
+   </style>
 </head>
 
 <body>
@@ -88,8 +95,17 @@ if (isset($_POST['submit'])) {
       <input type="text" name="name" required placeholder="Enter your Full Name" class="box" maxlength="50">
       <input type="email" name="email" required placeholder="Enter your Email" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
       <input type="number" name="number" required placeholder="Enter your Number" class="box" maxlength="11">
-      <input type="password" name="pass" required placeholder="Enter your Password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
-      <input type="password" name="cpass" required placeholder="Confirm your Password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
+
+      <!-- Password with Eye -->
+      <div class="password-field">
+         <input type="password" id="pass" name="pass" required placeholder="Enter your Password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
+         <i class="fas fa-eye toggle-eye" onclick="togglePassword('pass', this)"></i>
+      </div>
+
+      <div class="password-field">
+         <input type="password" id="cpass" name="cpass" required placeholder="Confirm your Password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
+         <i class="fas fa-eye toggle-eye" onclick="togglePassword('cpass', this)"></i>
+      </div>
 
       <label style="font-size: 18px; font-weight: bold;">Upload Valid ID (Image or PDF)</label>
       <input type="file" name="valid_id" accept=".jpg,.jpeg,.png,.pdf" class="box" required>
@@ -130,8 +146,19 @@ if (isset($_POST['submit'])) {
 
 <?php include 'components/footer.php'; ?>
 
-<!-- custom js file -->
+<!-- Custom JS -->
 <script src="js/script.js"></script>
+
+<!-- Show/Hide Password Script -->
+<script>
+function togglePassword(inputId, icon) {
+   const input = document.getElementById(inputId);
+   const isHidden = input.type === 'password';
+   input.type = isHidden ? 'text' : 'password';
+   icon.classList.toggle('fa-eye');
+   icon.classList.toggle('fa-eye-slash');
+}
+</script>
 
 </body>
 </html>

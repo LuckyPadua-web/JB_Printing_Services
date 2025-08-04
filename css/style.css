@@ -1067,4 +1067,14 @@ section {
     flex-flow: column;
     gap: 0;
   }
+  .btn-group {
+   display: flex;
+   gap: 1rem;
+   margin-top: 1rem;
+}
+
+.btn-group .cart-btn {
+   flex: 1;
+   text-align: center;
+}
 }
