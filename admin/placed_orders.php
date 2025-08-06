@@ -10,22 +10,15 @@ if (isset($_SESSION['admin_id'])) {
    exit;
 }
 
-// Update payment status
-if (isset($_POST['update_payment'])) {
+// Update payment status and delivery date
+if (isset($_POST['update_order'])) {
    $order_id = $_POST['order_id'];
    $payment_status = $_POST['payment_status'];
-   $update_status = $conn->prepare("UPDATE `orders` SET payment_status = ? WHERE id = ?");
-   $update_status->execute([$payment_status, $order_id]);
-   $message[] = 'Order status updated!';
-}
-
-// Update expected delivery date
-if (isset($_POST['update_delivery_date'])) {
-   $order_id = $_POST['order_id'];
    $expected_delivery_date = $_POST['expected_delivery_date'];
-   $update_delivery = $conn->prepare("UPDATE `orders` SET expected_delivery_date = ? WHERE id = ?");
-   $update_delivery->execute([$expected_delivery_date, $order_id]);
-   $message[] = 'Delivery date updated!';
+   
+   $update_order = $conn->prepare("UPDATE `orders` SET payment_status = ?, expected_delivery_date = ? WHERE id = ?");
+   $update_order->execute([$payment_status, $expected_delivery_date, $order_id]);
+   $message[] = 'Order updated successfully!';
 }
 
 // Delete order
@@ -147,6 +140,61 @@ if (isset($_GET['delete'])) {
       .actions-cell {
          min-width: 250px;
       }
+
+      /* Modal styles for viewing design */
+      .modal {
+         display: none;
+         position: fixed;
+         z-index: 1000;
+         left: 0;
+         top: 0;
+         width: 100%;
+         height: 100%;
+         overflow: auto;
+         background-color: rgba(0,0,0,0.8);
+      }
+
+      .modal-content {
+         background-color: #fefefe;
+         margin: 5% auto;
+         padding: 20px;
+         border-radius: 10px;
+         width: 80%;
+         max-width: 800px;
+         position: relative;
+      }
+
+      .close {
+         color: #aaa;
+         float: right;
+         font-size: 28px;
+         font-weight: bold;
+         cursor: pointer;
+         position: absolute;
+         right: 15px;
+         top: 10px;
+      }
+
+      .close:hover,
+      .close:focus {
+         color: #000;
+         text-decoration: none;
+      }
+
+      .design-image {
+         width: 100%;
+         height: auto;
+         max-height: 70vh;
+         object-fit: contain;
+         display: block;
+         margin: 20px auto 0;
+      }
+
+      .modal-title {
+         margin-top: 0;
+         color: #333;
+         text-align: center;
+      }
    </style>
 </head>
 <body>
@@ -196,19 +244,22 @@ if (isset($_GET['delete'])) {
                      <input type="hidden" name="order_id" value="<?= $order['id']; ?>">
                      <select name="payment_status">
                         <option disabled selected>Update status</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Pre Order">Pre Order</option>
-                        <option value="To received">To received</option>
-                        <option value="Delivered">Delivered</option>
+                        <option value="Pending" <?= $order['payment_status'] == 'Pending' ? 'selected' : '' ?>>Pending</option>
+                        <option value="Pre Order" <?= $order['payment_status'] == 'Pre Order' ? 'selected' : '' ?>>Pre Order</option>
+                        <option value="To received" <?= $order['payment_status'] == 'To received' ? 'selected' : '' ?>>To received</option>
+                        <option value="Delivered" <?= $order['payment_status'] == 'Delivered' ? 'selected' : '' ?>>Delivered</option>
                      </select>
-                     <input type="submit" name="update_payment" value="Update" class="btn">
+                     <input type="date" name="expected_delivery_date" value="<?= $order['expected_delivery_date']; ?>" min="<?= date('Y-m-d'); ?>">
+                     <input type="submit" name="update_order" value="Update Order" class="btn">
                   </form>
 
-                  <form action="" method="POST" class="inline-form">
-                     <input type="hidden" name="order_id" value="<?= $order['id']; ?>">
-                     <input type="date" name="expected_delivery_date" value="<?= $order['expected_delivery_date']; ?>" min="<?= date('Y-m-d'); ?>">
-                     <input type="submit" name="update_delivery_date" value="Set Delivery" class="btn">
-                  </form>
+                  <?php if (!empty($order['design_file'])): ?>
+                     <a href="#" class="btn" style="background: #3498db; margin-top: 0.5rem; display: block;" onclick="viewDesign('<?= htmlspecialchars($order['design_file']) ?>')">
+                        <i class="fas fa-eye"></i> View Design
+                     </a>
+                  <?php else: ?>
+                     <span style="color: #999; font-size: 1.2rem; margin-top: 0.5rem; display: block;">No design uploaded</span>
+                  <?php endif; ?>
 
                   <a href="placed_orders.php?delete=<?= $order['id']; ?>" class="delete-btn" onclick="return confirm('Delete this order?')">Delete</a>
                </td>
@@ -224,6 +275,45 @@ if (isset($_GET['delete'])) {
    </div>
 </section>
 
+<!-- Design View Modal -->
+<div id="designModal" class="modal">
+   <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 class="modal-title">Design Preview</h3>
+      <img id="designImage" class="design-image" src="" alt="Design Preview">
+   </div>
+</div>
+
 <script src="../js/admin_script.js"></script>
+<script>
+// Modal functionality
+const modal = document.getElementById('designModal');
+const modalImg = document.getElementById('designImage');
+const closeBtn = document.getElementsByClassName('close')[0];
+
+function viewDesign(filename) {
+   modal.style.display = 'block';
+   modalImg.src = '../uploaded_designs/' + filename;
+}
+
+// Close modal when clicking the X
+closeBtn.onclick = function() {
+   modal.style.display = 'none';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+   if (event.target == modal) {
+      modal.style.display = 'none';
+   }
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+   if (event.key === 'Escape') {
+      modal.style.display = 'none';
+   }
+});
+</script>
 </body>
 </html>
