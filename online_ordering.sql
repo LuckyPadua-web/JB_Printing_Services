@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 04, 2025 at 05:18 PM
+-- Generation Time: Aug 04, 2025 at 06:13 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -116,18 +116,20 @@ CREATE TABLE `orders` (
   `total_price` decimal(10,2) NOT NULL,
   `gcash_ref` varchar(50) DEFAULT NULL,
   `placed_on` datetime NOT NULL DEFAULT current_timestamp(),
-  `payment_status` varchar(20) NOT NULL DEFAULT 'pending'
+  `payment_status` varchar(20) NOT NULL DEFAULT 'pending',
+  `expected_delivery_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `user_id`, `product_id`, `type`, `quantity`, `size`, `price`, `design_file`, `name`, `number`, `email`, `method`, `address`, `total_products`, `total_price`, `gcash_ref`, `placed_on`, `payment_status`) VALUES
-(14, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:06:55', 'pending'),
-(15, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:07:32', 'pending'),
-(16, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 1)', 200.00, NULL, '2025-08-04 23:08:26', 'pending'),
-(17, 30, NULL, NULL, NULL, NULL, NULL, '6890ce75c30d2_160107100400-monkey-selfie.jpg', 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 4)', 800.00, NULL, '2025-08-04 23:15:01', 'pending');
+INSERT INTO `orders` (`id`, `user_id`, `product_id`, `type`, `quantity`, `size`, `price`, `design_file`, `name`, `number`, `email`, `method`, `address`, `total_products`, `total_price`, `gcash_ref`, `placed_on`, `payment_status`, `expected_delivery_date`) VALUES
+(14, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:06:55', 'pending', NULL),
+(15, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:07:32', 'pending', NULL),
+(16, 30, NULL, NULL, NULL, NULL, NULL, NULL, 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 1)', 200.00, NULL, '2025-08-04 23:08:26', 'pending', NULL),
+(17, 30, NULL, NULL, NULL, NULL, NULL, '6890ce75c30d2_160107100400-monkey-selfie.jpg', 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample B (₱200 x 4)', 800.00, NULL, '2025-08-04 23:15:01', 'Pending', '2025-08-12'),
+(18, 30, NULL, NULL, NULL, NULL, NULL, '6890cfea79748_160107100400-monkey-selfie.jpg', 'Lucky Padua', '09798798798', 'lucky@123gmail.com', 'cash on delivery', 'Sample, Sample, Sample, Sample', 'Sample A (₱200 x 1)', 200.00, NULL, '2025-08-04 23:21:14', 'pending', '2025-08-21');
 
 -- --------------------------------------------------------
 
@@ -248,7 +250,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `products`

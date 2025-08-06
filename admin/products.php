@@ -95,10 +95,10 @@ if(isset($_GET['delete'])){
       <input type="number" min="0" max="9999999999" required placeholder="Enter product price" name="price" onkeypress="if(this.value.length == 10) return false;" class="box">
       <select name="category" class="box" required>
          <option value="" disabled selected>Select category --</option>
-         <option value="main dish">Full sublimation</option>
-         <option value="fast food">Customize stickers</option>
-         <option value="drinks">Tarpaulin</option>
-         <option value="desserts">Souvenirs</option>
+         <option value="Customize stickers">Customize stickers</option>
+         <option value="Full sublimation">Full sublimation</option>
+         <option value="Tarpaulin">Tarpaulin</option>
+         <option value="Souvenirs">Souvenirs</option>
       </select>
       <input type="file" name="image" class="box" accept="image/jpg, image/jpeg, image/png, image/webp" required>
       <input type="submit" value="add product" name="add_product" class="btn">

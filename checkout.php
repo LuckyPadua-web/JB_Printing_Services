@@ -190,8 +190,8 @@ if (isset($_POST['submit'])) {
          <h3>Payment Method</h3>
          <select name="method" class="box" id="payment-method" required onchange="toggleGcashDetails()">
             <option value="" disabled selected>Select payment method --</option>
-            <option value="cash on delivery">Cash on delivery</option>
-            <option value="gcash">GCash</option>
+            <option value="Cash On Delivery">Cash on delivery</option>
+            <option value="Gcash">GCash</option>
          </select>
 
          <div id="gcash-details" style="display:none; margin-top: 10px;">
@@ -202,11 +202,6 @@ if (isset($_POST['submit'])) {
             <label style="font-size: 18px;">GCash Reference Number:</label>
             <input type="text" name="gcash_ref" id="gcash-ref" class="box">
          </div>
-
-         <h3>Expected Delivery Date</h3>
-         <input type="date" name="expected_delivery_date" class="box" min="<?= date('Y-m-d', strtotime('+1 day')); ?>" 
-                style="font-size: 1.8rem; padding: 1rem;">
-         <p style="font-size: 1.4rem; color: #666; margin-top: 5px;">Select your preferred delivery date (minimum 1 day from today)</p>
 
          <h3 style="text-align:center;">Do you already have a design?</h3>
 <div style="display: flex; justify-content: center; align-items: center; gap: 40px; margin: 15px 0;">

@@ -49,7 +49,7 @@ include 'components/add_cart.php';
                <h3>Welcome to</h3>
             </div>
             <div class="image">
-               <img src="images/JB/sticker zone logo.png" alt="Featured na Fastfood">
+               <img src="images/JB/LOGO-A.png" alt="JB Logo">
             </div>
          </div>
 
@@ -85,22 +85,22 @@ include 'components/add_cart.php';
 
    <div class="box-container">
 
-      <a href="category.php?category=fast food" class="box">
+      <a href="category.php?category=Customize stickers " class="box">
          <img src="images/JB/01.png" alt="">
+         <h3>Customize stickers </h3>
+      </a>
+
+      <a href="category.php?category=Full sublimation" class="box">
+         <img src="images/JB/02.png" alt="">
          <h3>Full sublimation</h3>
       </a>
 
-      <a href="category.php?category=main dish" class="box">
-         <img src="images/JB/02.png" alt="">
-         <h3>Customize stickers</h3>
-      </a>
-
-      <a href="category.php?category=drinks" class="box">
+      <a href="category.php?category=Tarpaulin" class="box">
          <img src="images/JB/03.png" alt="">
          <h3>Tarpaulin</h3>
       </a>
 
-      <a href="category.php?category=desserts" class="box">
+      <a href="category.php?category=Souvenirs" class="box">
          <img src="images/JB/04.png" alt="">
          <h3>Souvenirs</h3>
       </a>
