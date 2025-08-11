@@ -276,7 +276,7 @@ if (isset($_POST['submit'])) {
       const gcashDetails = document.getElementById('gcash-details');
       const gcashRef = document.getElementById('gcash-ref');
 
-      if (method === 'gcash') {
+      if (method === 'Gcash') {
          gcashDetails.style.display = 'block';
          gcashRef.setAttribute('required', 'required');
       } else {

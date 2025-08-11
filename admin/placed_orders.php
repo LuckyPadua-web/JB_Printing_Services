@@ -10,6 +10,16 @@ if (isset($_SESSION['admin_id'])) {
    exit;
 }
 
+// Search functionality
+$search_query = '';
+$where_clause = '';
+if (isset($_POST['search']) || isset($_GET['search'])) {
+   $search_query = isset($_POST['search_term']) ? $_POST['search_term'] : $_GET['search'];
+   if (!empty($search_query)) {
+      $where_clause = "WHERE name LIKE ? OR gcash_ref LIKE ?";
+   }
+}
+
 // Update payment status and delivery date
 if (isset($_POST['update_order'])) {
    $order_id = $_POST['order_id'];
@@ -195,6 +205,59 @@ if (isset($_GET['delete'])) {
          color: #333;
          text-align: center;
       }
+
+      /* Search styles */
+      .search-container {
+         max-width: 1200px;
+         margin: 0 auto 2rem auto;
+         background: #fff;
+         padding: 2rem;
+         border-radius: 10px;
+         box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      }
+
+      .search-form {
+         display: flex;
+         gap: 1rem;
+         align-items: center;
+         flex-wrap: wrap;
+      }
+
+      .search-input {
+         flex: 1;
+         min-width: 300px;
+         padding: 1rem;
+         font-size: 1.4rem;
+         border: 2px solid #ddd;
+         border-radius: 5px;
+      }
+
+      .search-btn {
+         padding: 1rem 2rem;
+         font-size: 1.4rem;
+         background: #3498db;
+         color: white;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+      }
+
+      .clear-btn {
+         padding: 1rem 2rem;
+         font-size: 1.4rem;
+         background: #95a5a6;
+         color: white;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+         text-decoration: none;
+      }
+
+      .search-info {
+         margin-top: 1rem;
+         font-size: 1.3rem;
+         color: #666;
+      }
    </style>
 </head>
 <body>
@@ -204,6 +267,27 @@ if (isset($_GET['delete'])) {
 <section class="placed-orders">
    <h1 class="heading">Placed Orders</h1>
 
+   <!-- Search Container -->
+   <div class="search-container">
+      <form action="" method="POST" class="search-form">
+         <input type="text" name="search_term" class="search-input" 
+                placeholder="Search by customer name or GCash reference number..." 
+                value="<?= htmlspecialchars($search_query) ?>">
+         <button type="submit" name="search" class="search-btn">
+            <i class="fas fa-search"></i> Search
+         </button>
+         <a href="placed_orders.php" class="clear-btn">
+            <i class="fas fa-times"></i> Clear
+         </a>
+      </form>
+      <?php if (!empty($search_query)): ?>
+         <div class="search-info">
+            <i class="fas fa-info-circle"></i> 
+            Showing results for: "<strong><?= htmlspecialchars($search_query) ?></strong>"
+         </div>
+      <?php endif; ?>
+   </div>
+
    <div class="orders-wrapper">
       <table class="orders-table">
          <thead>
@@ -211,6 +295,7 @@ if (isset($_GET['delete'])) {
                <th>Order ID</th>
                <th>Customer</th>
                <th>Method</th>
+               <th>GCash Ref</th>
                <th>Placed On</th>
                <th>Delivery</th>
                <th>Status</th>
@@ -220,8 +305,17 @@ if (isset($_GET['delete'])) {
          
          <tbody>
          <?php
-            $select_orders = $conn->prepare("SELECT * FROM `orders` ORDER BY placed_on DESC");
-            $select_orders->execute();
+            // Build the SQL query with search functionality
+            $sql = "SELECT * FROM `orders` " . $where_clause . " ORDER BY placed_on DESC";
+            $select_orders = $conn->prepare($sql);
+            
+            if (!empty($search_query)) {
+               $search_param = "%{$search_query}%";
+               $select_orders->execute([$search_param, $search_param]);
+            } else {
+               $select_orders->execute();
+            }
+            
             if ($select_orders->rowCount() > 0) {
                while ($order = $select_orders->fetch(PDO::FETCH_ASSOC)) {
                   $placed_on = date('d M Y, h:i A', strtotime($order['placed_on']));
@@ -236,6 +330,13 @@ if (isset($_GET['delete'])) {
                <td class="order-id"><?= htmlspecialchars($order['id']) ?></td>
                <td><?= htmlspecialchars($order['name']) ?></td>
                <td><?= htmlspecialchars($order['method']) ?></td>
+               <td>
+                  <?php if (!empty($order['gcash_ref'])): ?>
+                     <span style="font-weight: bold; color: #27ae60;"><?= htmlspecialchars($order['gcash_ref']) ?></span>
+                  <?php else: ?>
+                     <span style="color: #999;">N/A</span>
+                  <?php endif; ?>
+               </td>
                <td><?= $placed_on ?></td>
                <td><?= $expected_delivery ?></td>
                <td><span class="badge <?= $status_class ?>"><?= htmlspecialchars($order['payment_status']) ?></span></td>
@@ -267,7 +368,11 @@ if (isset($_GET['delete'])) {
          <?php
                }
             } else {
-               echo '<tr><td colspan="7">No orders placed yet!</td></tr>';
+               if (!empty($search_query)) {
+                  echo '<tr><td colspan="8">No orders found matching your search criteria.</td></tr>';
+               } else {
+                  echo '<tr><td colspan="8">No orders placed yet!</td></tr>';
+               }
             }
          ?>
          </tbody>
