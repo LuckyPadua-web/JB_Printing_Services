@@ -70,18 +70,51 @@ $select_recent_orders = $conn->prepare("SELECT * FROM `orders` ORDER BY placed_o
 $select_recent_orders->execute();
 $recent_orders = $select_recent_orders->fetchAll(PDO::FETCH_ASSOC);
 
-// Top products
-$select_top_products = $conn->prepare("
-    SELECT p.name, p.image, COUNT(o.id) as order_count, SUM(o.total_price) as total_sales 
-    FROM `orders` o 
-    JOIN `products` p ON FIND_IN_SET(p.name, o.total_products)
-    WHERE o.payment_status = 'delivered'
-    GROUP BY p.name 
-    ORDER BY order_count DESC 
-    LIMIT 5
-");
-$select_top_products->execute();
-$top_products = $select_top_products->fetchAll(PDO::FETCH_ASSOC);
+// Top products (robust join for comma-separated product names)
+
+// Get all delivered orders
+$select_delivered_orders = $conn->prepare("SELECT total_products, total_price FROM orders WHERE payment_status = 'delivered'");
+$select_delivered_orders->execute();
+$delivered_orders = $select_delivered_orders->fetchAll(PDO::FETCH_ASSOC);
+
+// Get all products for image lookup
+$select_all_products = $conn->prepare("SELECT name, image FROM products");
+$select_all_products->execute();
+$all_products = $select_all_products->fetchAll(PDO::FETCH_ASSOC);
+$product_images = [];
+foreach($all_products as $prod) {
+    $product_images[$prod['name']] = $prod['image'];
+}
+
+// Count delivered products
+$product_counts = [];
+$product_sales = [];
+foreach($delivered_orders as $order) {
+    $products = explode(',', $order['total_products']);
+    foreach($products as $prod) {
+        $prod = trim($prod);
+        if($prod === '') continue;
+        if(!isset($product_counts[$prod])) $product_counts[$prod] = 0;
+        $product_counts[$prod]++;
+        if(!isset($product_sales[$prod])) $product_sales[$prod] = 0;
+        $product_sales[$prod] += $order['total_price'];
+    }
+}
+
+// Sort and get top 3
+arsort($product_counts);
+$top_products = [];
+$i = 0;
+foreach($product_counts as $name => $count) {
+    if($i >= 3) break;
+    $top_products[] = [
+        'name' => $name,
+        'image' => isset($product_images[$name]) ? $product_images[$name] : 'default.png',
+        'order_count' => $count,
+        'total_sales' => $product_sales[$name]
+    ];
+    $i++;
+}
 
 ?>
 
@@ -287,6 +320,29 @@ $top_products = $select_top_products->fetchAll(PDO::FETCH_ASSOC);
          align-items: center;
          padding: 1rem;
          border-bottom: 1px solid #f0f0f0;
+      }
+
+      .top-product-badge {
+         font-size: 1.1rem;
+         font-weight: bold;
+         margin-left: 1rem;
+         padding: 0.2rem 0.8rem;
+         border-radius: 12px;
+         background: #ffeaa7;
+         color: #636e72;
+         display: inline-block;
+      }
+      .top-product-badge.gold {
+         background: linear-gradient(90deg, #ffd700, #fffbe6);
+         color: #b78628;
+      }
+      .top-product-badge.silver {
+         background: linear-gradient(90deg, #c0c0c0, #f8f8f8);
+         color: #6e6e6e;
+      }
+      .top-product-badge.bronze {
+         background: linear-gradient(90deg, #cd7f32, #fbeee0);
+         color: #7c4a02;
       }
 
       .product-img {
@@ -513,18 +569,28 @@ $top_products = $select_top_products->fetchAll(PDO::FETCH_ASSOC);
             <i class="fas fa-star"></i> Top Products
          </div>
          <div class="table-content">
-            <?php if(count($top_products) > 0): ?>
-               <?php foreach($top_products as $product): ?>
+            <?php if(count($top_products) > 0 && $top_products[0]['order_count'] > 0): ?>
+               <?php foreach($top_products as $idx => $product): ?>
+                  <?php if($product['order_count'] > 0): ?>
                   <div class="product-item">
-                     <img src="../uploaded_img/<?= $product['image']; ?>" alt="<?= htmlspecialchars($product['name']); ?>" class="product-img">
                      <div class="product-info">
-                        <h4><?= htmlspecialchars($product['name']); ?></h4>
+                        <h4>
+                           <?= htmlspecialchars($product['name']); ?>
+                           <?php if($idx === 0): ?>
+                              <span class="top-product-badge gold">🥇 Most Bought</span>
+                           <?php elseif($idx === 1): ?>
+                              <span class="top-product-badge silver">🥈 2nd Most Bought</span>
+                           <?php elseif($idx === 2): ?>
+                              <span class="top-product-badge bronze">🥉 3rd Most Bought</span>
+                           <?php endif; ?>
+                        </h4>
                         <p><?= $product['order_count']; ?> orders • ₱<?= number_format($product['total_sales'], 2); ?></p>
                      </div>
                   </div>
+                  <?php endif; ?>
                <?php endforeach; ?>
             <?php else: ?>
-               <p class="empty">No product data available!</p>
+               <p class="empty">No product data available! (Debug: Top products count: <?= count($top_products); ?>)</p>
             <?php endif; ?>
          </div>
       </div>
