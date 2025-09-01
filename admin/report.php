@@ -262,6 +262,20 @@ $top_products = $select_top_products->fetchAll(PDO::FETCH_ASSOC);
          font-size: 1.2rem;
       }
 
+      .order-info {
+         display: flex;
+         flex-direction: column;
+         gap: 0.3rem;
+      }
+
+      .order-info .status-badge {
+         margin-top: 0.5rem;
+         align-self: flex-start;
+         min-width: 100px;
+         text-align: center;
+         white-space: nowrap;
+      }
+
       .order-amount {
          font-weight: bold;
          color: var(--main-color);
