@@ -445,6 +445,12 @@ foreach($product_counts as $name => $count) {
 <div class="reports-container">
    <h1 class="heading">📊 Business Reports & Analytics</h1>
 
+    <!-- Print Button -->
+   <button onclick="window.print()" 
+           style="background:#3498db; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:16px; margin-bottom:20px;">
+      🖨️ Print
+   </button>
+
    <!-- Summary Section -->
    <div class="summary-section">
       <h2 class="summary-title">Quick Overview</h2>
@@ -532,11 +538,6 @@ foreach($product_counts as $name => $count) {
          <canvas id="salesChart" width="400" height="200"></canvas>
       </div>
       
-      <div class="chart-container">
-         <h3 class="chart-title">📊 Order Status Distribution</h3>
-         <canvas id="statusChart" width="300" height="300"></canvas>
-      </div>
-   </div>
 
    <!-- Tables Section -->
    <div class="tables-section">
@@ -564,34 +565,7 @@ foreach($product_counts as $name => $count) {
          </div>
       </div>
 
-      <div class="table-container">
-         <div class="table-header">
-            <i class="fas fa-star"></i> Top Products
-         </div>
-         <div class="table-content">
-            <?php if(count($top_products) > 0 && $top_products[0]['order_count'] > 0): ?>
-               <?php foreach($top_products as $idx => $product): ?>
-                  <?php if($product['order_count'] > 0): ?>
-                  <div class="product-item">
-                     <div class="product-info">
-                        <h4>
-                           <?= htmlspecialchars($product['name']); ?>
-                           <?php if($idx === 0): ?>
-                              <span class="top-product-badge gold">🥇 Most Bought</span>
-                           <?php elseif($idx === 1): ?>
-                              <span class="top-product-badge silver">🥈 2nd Most Bought</span>
-                           <?php elseif($idx === 2): ?>
-                              <span class="top-product-badge bronze">🥉 3rd Most Bought</span>
-                           <?php endif; ?>
-                        </h4>
-                        <p><?= $product['order_count']; ?> orders • ₱<?= number_format($product['total_sales'], 2); ?></p>
-                     </div>
-                  </div>
-                  <?php endif; ?>
-               <?php endforeach; ?>
-            <?php else: ?>
-               <p class="empty">No product data available! (Debug: Top products count: <?= count($top_products); ?>)</p>
-            <?php endif; ?>
+     
          </div>
       </div>
    </div>
@@ -632,37 +606,6 @@ const salesChart = new Chart(salesCtx, {
                     callback: function(value) {
                         return '₱' + value.toLocaleString();
                     }
-                }
-            }
-        }
-    }
-});
-
-// Status Chart
-const statusCtx = document.getElementById('statusChart').getContext('2d');
-const statusChart = new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Delivered', 'Pending', 'Pre-Order'],
-        datasets: [{
-            data: [<?= $total_delivered; ?>, <?= $total_pending; ?>, <?= $total_preorder; ?>],
-            backgroundColor: [
-                '#27ae60',
-                '#f39c12',
-                '#8e44ad'
-            ],
-            borderWidth: 0,
-            hoverOffset: 4
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 20,
-                    usePointStyle: true
                 }
             }
         }
