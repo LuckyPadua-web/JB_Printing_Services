@@ -4,14 +4,12 @@ include '../components/connect.php';
 
 session_start();
 
-
 if(isset($_SESSION['admin_id'])){
    $admin_id = $_SESSION['admin_id'];
 }else{
    $admin_id = '';
    header('location:admin_login.php');
 };
-
 
 if(isset($_POST['add_product'])){
 
@@ -24,7 +22,6 @@ if(isset($_POST['add_product'])){
 
    $image = $_FILES['image']['name'];
    $image = filter_var($image, FILTER_SANITIZE_STRING);
-   $image_size = $_FILES['image']['size'];
    $image_tmp_name = $_FILES['image']['tmp_name'];
    $image_folder = '../uploaded_img/'.$image;
 
@@ -34,17 +31,13 @@ if(isset($_POST['add_product'])){
    if($select_products->rowCount() > 0){
       $message[] = 'Product name already exists!';
    }else{
-      if($image_size > 2000000){
-         $message[] = 'Image size is too large';
-      }else{
-         move_uploaded_file($image_tmp_name, $image_folder);
+      // Removed image size restriction
+      move_uploaded_file($image_tmp_name, $image_folder);
 
-         $insert_product = $conn->prepare("INSERT INTO `products`(name, category, price, image) VALUES(?,?,?,?)");
-         $insert_product->execute([$name, $category, $price, $image]);
+      $insert_product = $conn->prepare("INSERT INTO `products`(name, category, price, image) VALUES(?,?,?,?)");
+      $insert_product->execute([$name, $category, $price, $image]);
 
-         $message[] = 'New product added!';
-      }
-
+      $message[] = 'New product added!';
    }
 
 }
@@ -124,7 +117,6 @@ if(isset($_GET['delete'])){
       <img src="../uploaded_img/<?= $fetch_products['image']; ?>" alt="">
       <div class="flex">
          <div class="price"><span>&#8369;</span><?= $fetch_products['price']; ?><span></span></div>
-         
       </div>
       <div class="name"><?= $fetch_products['name']; ?></div>
       <div class="flex-btn">
@@ -144,15 +136,6 @@ if(isset($_GET['delete'])){
 </section>
 
 <!-- show products section ends -->
-
-
-
-
-
-
-
-
-
 
 <!-- custom js file link  -->
 <script src="../js/admin_script.js"></script>
