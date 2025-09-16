@@ -86,12 +86,12 @@ include 'components/add_cart.php';
    <div class="box-container">
 
       <a href="category.php?category=Customize stickers " class="box">
-         <img src="images/JB/01.png" alt="">
+         <img src="images/JB/02.png" alt="">
          <h3>Customize stickers </h3>
       </a>
 
       <a href="category.php?category=Full sublimation" class="box">
-         <img src="images/JB/02.png" alt="">
+         <img src="images/JB/01.png" alt="">
          <h3>Full sublimation</h3>
       </a>
 
