@@ -37,6 +37,25 @@ if(isset($_POST['send'])){
 
 }
 
+if(isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])){
+   $select_profile = $conn->prepare("SELECT * FROM `users` WHERE id = ?");
+   $select_profile->execute([$user_id]);
+   if($select_profile->rowCount() > 0){
+      $fetch_profile = $select_profile->fetch(PDO::FETCH_ASSOC);
+      $user_name = $fetch_profile['name'];
+      $user_email = $fetch_profile['email'];
+      $user_number = $fetch_profile['number'];
+   } else {
+      $user_name = '';
+      $user_email = '';
+      $user_number = '';
+   }
+} else {
+   $user_name = '';
+   $user_email = '';
+   $user_number = '';
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -71,9 +90,9 @@ if(isset($_POST['send'])){
    <div class="row">
       <form action="" method="post">
          <h3>Tell us something!</h3>
-         <input type="text" name="name" maxlength="50" class="box" placeholder="Enter your name" required>
-         <input type="number" name="number" min="0" max="9999999999" class="box" placeholder="Enter your number" required maxlength="11">
-         <input type="email" name="email" maxlength="50" class="box" placeholder="Enter your email" required>
+         <input type="text" name="name" maxlength="50" class="box" placeholder="Enter your name" required value="<?= htmlspecialchars($user_name ?? '') ?>" <?= (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? 'readonly' : ''; ?>>
+         <input type="number" name="number" min="0" max="9999999999" class="box" placeholder="Enter your number" required maxlength="11" value="<?= htmlspecialchars($user_number ?? '') ?>" <?= (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? 'readonly' : '';?> >
+         <input type="email" name="email" maxlength="50" class="box" placeholder="Enter your email" required value="<?= htmlspecialchars($user_email ?? '') ?>" <?= (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? 'readonly' : '';?> >
          <textarea name="msg" class="box" required placeholder="Enter your message" maxlength="500" cols="30" rows="10"></textarea>
          <input type="submit" value="send message" name="send" class="btn">
       </form>

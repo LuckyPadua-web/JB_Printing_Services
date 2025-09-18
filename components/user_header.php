@@ -22,6 +22,9 @@ if(isset($message)){
          <a href="menu.php">PRODUCTS</a>
          <a href="orders.php">ORDERS</a>
          <a href="about.php">ABOUT US</a>
+         <?php if(isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])): ?>
+         <a href="contact.php">CONTACT</a>
+         <?php endif; ?>
       </nav>
 
       <div class="icons">
