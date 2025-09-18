@@ -250,6 +250,10 @@ foreach($product_counts as $name => $count) {
          gap: 2rem;
       }
 
+      .tables-section .table-container:first-child {
+         grid-column: 1 / span 2;
+      }
+
       .table-container {
          background: white;
          border-radius: 15px;
