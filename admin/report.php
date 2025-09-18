@@ -436,6 +436,40 @@ foreach($product_counts as $name => $count) {
          color: var(--light-color);
          margin-top: 0.5rem;
       }
+
+      @media print {
+         body *:not(.client-details-print-section):not(.client-details-print-section *) {
+            display: none !important;
+         }
+         .client-details-print-section {
+            display: block !important;
+            margin: 0 auto;
+            padding: 2rem;
+            max-width: 900px;
+         }
+         .client-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            font-size: 1.2rem;
+         }
+         .client-details-table th, .client-details-table td {
+            border: 1px solid #333;
+            padding: 0.7rem 1rem;
+            text-align: left;
+         }
+         .client-details-table th {
+            background: #eee;
+         }
+         .client-details-table tr:nth-child(even) {
+            background: #f9f9f9;
+         }
+         h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+         }
+      }
+      .client-details-print-section { display: none; }
    </style>
 </head>
 <body>
@@ -569,6 +603,72 @@ foreach($product_counts as $name => $count) {
          </div>
       </div>
    </div>
+
+   <!-- Client Details Print Section -->
+   <?php include 'report_clients_query.php'; ?>
+   <div class="client-details-print-section">
+      <h2>Client Details List</h2>
+      <table class="client-details-table">
+         <thead>
+            <tr>
+               <th>#</th>
+               <th>User ID</th>
+               <th>Name</th>
+               <th>Email</th>
+               <th>Phone Number</th>
+            </tr>
+         </thead>
+         <tbody>
+            <?php if(count($all_clients) > 0): $i=1; foreach($all_clients as $client): ?>
+            <tr>
+               <td><?= $i++; ?></td>
+               <td><?= htmlspecialchars($client['id']); ?></td>
+               <td><?= htmlspecialchars($client['name']); ?></td>
+               <td><?= htmlspecialchars($client['email']); ?></td>
+               <td><?= htmlspecialchars($client['number']); ?></td>
+            </tr>
+            <?php endforeach; else: ?>
+            <tr><td colspan="5">No clients found.</td></tr>
+            <?php endif; ?>
+         </tbody>
+      </table>
+   </div>
+
+   <style>
+   @media print {
+      body *:not(.client-details-print-section):not(.client-details-print-section *) {
+         display: none !important;
+      }
+      .client-details-print-section {
+         display: block !important;
+         margin: 0 auto;
+         padding: 2rem;
+         max-width: 900px;
+      }
+      .client-details-table {
+         width: 100%;
+         border-collapse: collapse;
+         margin-top: 2rem;
+         font-size: 1.2rem;
+      }
+      .client-details-table th, .client-details-table td {
+         border: 1px solid #333;
+         padding: 0.7rem 1rem;
+         text-align: left;
+      }
+      .client-details-table th {
+         background: #eee;
+      }
+      .client-details-table tr:nth-child(even) {
+         background: #f9f9f9;
+      }
+      h2 {
+         text-align: center;
+         margin-bottom: 1.5rem;
+      }
+   }
+   .client-details-print-section { display: none; }
+   </style>
 </div>
 
 <script>
