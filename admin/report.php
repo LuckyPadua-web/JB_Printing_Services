@@ -607,6 +607,12 @@ foreach($product_counts as $name => $count) {
    <!-- Client Details Print Section -->
    <?php include 'report_clients_query.php'; ?>
    <div class="client-details-print-section">
+      <div style="text-align:center; margin-bottom:1.5rem;">
+         <img src="../images/JB/Logo-A.png" alt="JB Printing Services Logo" style="height:70px; margin-bottom:10px;">
+         <h1 style="margin:0; font-size:2.2rem; color:#333;">JB Printing Services</h1>
+         <h2 style="margin:0; font-size:1.5rem; color:#555;">Client Details Report</h2>
+         <div style="font-size:1.1rem; color:#888; margin-top:0.5rem;">Generated: <?= date('F d, Y'); ?></div>
+      </div>
       <h2>Client Details List</h2>
       <table class="client-details-table">
          <thead>
@@ -616,6 +622,9 @@ foreach($product_counts as $name => $count) {
                <th>Name</th>
                <th>Email</th>
                <th>Phone Number</th>
+               <th>Payment Method</th>
+               <th>Date Ordered</th>
+               <th>Date Delivered</th>
             </tr>
          </thead>
          <tbody>
@@ -626,9 +635,12 @@ foreach($product_counts as $name => $count) {
                <td><?= htmlspecialchars($client['name']); ?></td>
                <td><?= htmlspecialchars($client['email']); ?></td>
                <td><?= htmlspecialchars($client['number']); ?></td>
+               <td><?= $client['payment_method'] ? htmlspecialchars($client['payment_method']) : 'N/A'; ?></td>
+               <td><?= $client['date_ordered'] ? date('M d, Y', strtotime($client['date_ordered'])) : 'N/A'; ?></td>
+               <td><?= $client['date_delivered'] ? date('M d, Y', strtotime($client['date_delivered'])) : 'Pending'; ?></td>
             </tr>
             <?php endforeach; else: ?>
-            <tr><td colspan="5">No clients found.</td></tr>
+            <tr><td colspan="8">No clients found.</td></tr>
             <?php endif; ?>
          </tbody>
       </table>
