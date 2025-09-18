@@ -60,9 +60,9 @@ if(isset($_SESSION['user_id'])){
   <h2 style="text-align:center; font-size:2.5rem; margin-bottom:2rem; color:var(--black);">Meet the Developers</h2>
   <div class="dev-row" style="display:flex; flex-wrap:wrap; gap:2rem; justify-content:center;">
     <div class="dev-card" style="background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
-      <img src="images/user-icon.png" alt="Developer 1" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
+      <img src="images/ATTY.png" alt="Developer 1" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Lucky Keith B. Padua</h3>
-      <p style="color:var(--light-color); font-size:1.2rem; margin-bottom:1rem;">Role or short bio goes here. You can update this later with details.</p>
+      <p style="color:var(--light-color); font-size:1.2rem; margin-bottom:1rem;">Pindot Pindot lang</p>
       <div style="display:flex; justify-content:center; gap:1rem;">
         <a href="#" style="color:#4267B2;"><i class="fab fa-facebook" style="font-size:2.2rem;"></i></a>
         <a href="#" style="color:#333;"><i class="fab fa-github" style="font-size:2.2rem;"></i></a>
