@@ -196,3 +196,5 @@ var swiper = new Swiper(".hero-slider", {
 
 </body>
 </html>
+
+<!--Sample Change code pag nag change ka sana ng code dito or kahit saan dapat mag commit ka para ma save sa history ng project mo-->
