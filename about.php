@@ -60,7 +60,7 @@ if(isset($_SESSION['user_id'])){
   <h2 style="text-align:center; font-size:2.5rem; margin-bottom:2rem; color:var(--black);">Meet the Developers</h2>
   <div class="dev-row" style="display:flex; flex-wrap:wrap; gap:2rem; justify-content:center;">
     <div class="dev-card" style="background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
-      <img src="images/user-icon.png" alt="Developer 1" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
+      <img src="images/ATTY.png" alt="Developer 1" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Lucky Keith B. Padua</h3>
       <p style="color:var(--light-color); font-size:1.2rem; margin-bottom:1rem;">Role or short bio goes here. You can update this later with details.</p>
       <div style="display:flex; justify-content:center; gap:1rem;">
@@ -70,7 +70,7 @@ if(isset($_SESSION['user_id'])){
       </div>
     </div>
     <div class="dev-card" style="background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
-      <img src="images/user-icon.png" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
+      <img src="images/123.jpg" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Joren L. Duerme</h3>
       <p style="color:var(--light-color); font-size:1.2rem; margin-bottom:1rem;">Role or short bio goes here. You can update this later with details.</p>
       <div style="display:flex; justify-content:center; gap:1rem;">
