@@ -111,7 +111,7 @@ if(isset($_SESSION['user_id'])){
 
     <!-- Developer 2 -->
     <div class="dev-card" onclick="openModal('modal2')" style="cursor:pointer; background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
-      <img src="images/user-icon.png" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
+      <img src="images/joren.jpg" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Joren L. Duerme</h3>
       <p style="color:var(--light-color); font-size:1.2rem;">Co-Developer</p>
     </div>
@@ -136,9 +136,9 @@ if(isset($_SESSION['user_id'])){
 <div id="modal2" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal('modal2')">&times;</span>
-    <img src="images/user-icon.png" alt="Joren L. Duerme">
+    <img src="images/joren.jpg" alt="Joren L. Duerme">
     <h2>Joren L. Duerme</h2>
-    <p>Co-Developer. Focuses on UI/UX and client interaction.</p>
+    <p>Co-Developer. Focuses on User Interface and client interaction.</p>
     <div style="margin-top:1rem;">
       <a href="https://web.facebook.com/joren.duerme.14" target="_blank" style="color:#4267B2; margin:0 1rem;"><i class="fab fa-facebook fa-2x"></i></a>
     </div>
