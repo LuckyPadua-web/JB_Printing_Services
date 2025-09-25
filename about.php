@@ -111,7 +111,7 @@ if(isset($_SESSION['user_id'])){
 
     <!-- Developer 2 -->
     <div class="dev-card" onclick="openModal('modal2')" style="cursor:pointer; background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
-      <img src="images/joren.jpg" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
+      <img src="images/joren.png" alt="Developer 2" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Joren L. Duerme</h3>
       <p style="color:var(--light-color); font-size:1.2rem;">Co-Developer</p>
     </div>
@@ -124,10 +124,18 @@ if(isset($_SESSION['user_id'])){
   <div class="modal-content">
     <span class="close" onclick="closeModal('modal1')">&times;</span>
     <img src="images/ATTY.png" alt="Lucky Keith B. Padua">
-    <h2>Lucky Keith B. Padua</h2>
-    <p>Lead Developer of JB Printing Services website. Passionate in web development and creative solutions.</p>
+    <h2 style="font-size:2.3rem; color:var(--black); margin-bottom:0.5rem;">Lucky Keith B. Padua</h2>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Age:</strong> 22</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Gender:</strong> Male</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Citizenship:</strong> Filipino</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Civil Status:</strong> Single</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Address:</strong> Centro Sur, Sto.Nino, Cagayan</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Email:</strong> luckybaltazar21@gmail.com</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Contact No.:</strong> 0905 935 3906</p>
     <div style="margin-top:1rem;">
       <a href="https://web.facebook.com/Luckybaltazar21" target="_blank" style="color:#4267B2; margin:0 1rem;"><i class="fab fa-facebook fa-2x"></i></a>
+      <a href="https://github.com/LuckyPadua-web" target="_blank" style="color:#333; margin:0 1rem;"><i class="fab fa-github fa-2x"></i></a>
+      <a href="https://linkedin.com/" target="_blank" style="color:#0077B5; margin:0 1rem;"><i class="fab fa-linkedin fa-2x"></i></a>
     </div>
   </div>
 </div>
@@ -136,11 +144,22 @@ if(isset($_SESSION['user_id'])){
 <div id="modal2" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal('modal2')">&times;</span>
-    <img src="images/joren.jpg" alt="Joren L. Duerme">
-    <h2>Joren L. Duerme</h2>
-    <p>Co-Developer. Focuses on User Interface and client interaction.</p>
+    <img src="images/joren.png" alt="Joren L. Duerme">
+    <h2 style="font-size:2.3rem; color:var(--black); margin-bottom:0.5rem;">Joren L. Duerme</h2>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Age:</strong> 23</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Gender:</strong> Male</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Citizenship:</strong> Filipino</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Civil Status:</strong> Single</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Address:</strong> Virginia, Sto.Nino, Cagayan</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Email:</strong> duermejoren@gmail.com</p>
+  <p class="dev-info" style="font-size:1.5rem; color:var(--dark-color); margin:1rem 0;"><strong>Contact No.:</strong> 0905 175 1081</p>
     <div style="margin-top:1rem;">
       <a href="https://web.facebook.com/joren.duerme.14" target="_blank" style="color:#4267B2; margin:0 1rem;"><i class="fab fa-facebook fa-2x"></i></a>
+      <a style="color:#333; margin:0 1rem; cursor:default;">
+  <i class="fab fa-github fa-2x"></i>
+</a>
+ <a href="https://linkedin.com/" target="_blank" style="color:#0077B5; margin:0 1rem;"><i class="fab fa-linkedin fa-2x"></i></a>
+
     </div>
   </div>
 </div>
