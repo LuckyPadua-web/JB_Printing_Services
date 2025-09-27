@@ -33,9 +33,9 @@ $pending_data = $select_pending->fetch(PDO::FETCH_ASSOC);
 $total_pending = $pending_data['count'];
 $pending_amount = $pending_data['total'] ?? 0;
 
-// Total Pre Orders (assuming pre-order status exists)
+// Total Pre Orders (assuming pre order status exists)
 $select_preorder = $conn->prepare("SELECT COUNT(*) as count, SUM(total_price) as total FROM `orders` WHERE payment_status = ?");
-$select_preorder->execute(['pre-order']);
+$select_preorder->execute(['pre order']);
 $preorder_data = $select_preorder->fetch(PDO::FETCH_ASSOC);
 $total_preorder = $preorder_data['count'];
 $preorder_amount = $preorder_data['total'] ?? 0;
