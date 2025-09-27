@@ -102,7 +102,7 @@ if(isset($_SESSION['user_id'])){
   <h2 style="text-align:center; font-size:2.5rem; margin-bottom:2rem; color:var(--black);">Meet the Developers</h2>
   <div class="dev-row" style="display:flex; flex-wrap:wrap; gap:2rem; justify-content:center;">
     
-    <!-- Developer 1 -->
+    <!-- Developer 123456 -->
     <div class="dev-card" onclick="openModal('modal1')" style="cursor:pointer; background:#fff; border:var(--border); border-radius:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); padding:2rem; max-width:350px; flex:1 1 300px; text-align:center;">
       <img src="images/ATTY.png" alt="Developer 1" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:1rem;">
       <h3 style="font-size:1.8rem; color:var(--black); margin-bottom:0.5rem;">Lucky Keith B. Padua</h3>
