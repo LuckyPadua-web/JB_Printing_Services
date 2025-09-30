@@ -1,7 +1,17 @@
 <?php
 include 'components/connect.php';
-
 session_start();
+
+// ✅ Always initialize $message as array (prevents foreach warnings)
+$message = [];
+
+// ✅ Load PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'PHPMailer/src/Exception.php';
+require 'PHPMailer/src/PHPMailer.php';
+require 'PHPMailer/src/SMTP.php';
 
 if (isset($_SESSION['user_id'])) {
    $user_id = $_SESSION['user_id'];
@@ -14,8 +24,9 @@ if (isset($_POST['submit'])) {
    $name = filter_var($_POST['name'], FILTER_SANITIZE_STRING);
    $email = filter_var($_POST['email'], FILTER_SANITIZE_STRING);
    $number = filter_var($_POST['number'], FILTER_SANITIZE_STRING);
-   $pass = filter_var(sha1($_POST['pass']), FILTER_SANITIZE_STRING);
-   $cpass = filter_var(sha1($_POST['cpass']), FILTER_SANITIZE_STRING);
+   $address = filter_var($_POST['address'], FILTER_SANITIZE_STRING);
+   $pass = $_POST['pass'];
+   $cpass = $_POST['cpass'];
 
    $sec_q1 = filter_var($_POST['security_question_1'], FILTER_SANITIZE_STRING);
    $sec_a1 = filter_var($_POST['security_answer_1'], FILTER_SANITIZE_STRING);
@@ -30,25 +41,78 @@ if (isset($_POST['submit'])) {
    $valid_id_folder = 'uploaded_ids/' . $valid_id_renamed;
    move_uploaded_file($valid_id_tmp, $valid_id_folder);
 
-   $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? OR number = ?");
-   $select_user->execute([$email, $number]);
-
-   if ($select_user->rowCount() > 0) {
-      $message[] = 'Email or number already exists!';
+   // ✅ Gmail only check
+   if (!preg_match("/^[a-zA-Z0-9._%+-]+@gmail\.com$/", $email)) {
+      $message[] = 'Only Gmail addresses are allowed!';
+   }
+   // ✅ Digits only for number
+   elseif (!preg_match("/^[0-9]+$/", $number)) {
+      $message[] = 'Phone number must contain digits only!';
+   }
+   // ✅ Length check for PH number (11 digits)
+   elseif (strlen($number) != 11) {
+      $message[] = 'Phone number must be exactly 11 digits!';
+   }
+   // ✅ Password match
+   elseif ($pass !== $cpass) {
+      $message[] = 'Passwords do not match!';
    } else {
-      if ($pass != $cpass) {
-         $message[] = 'Confirm password not matched!';
+      // ✅ Check if email/number exists
+      $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? OR number = ?");
+      $select_user->execute([$email, $number]);
+
+      if ($select_user->rowCount() > 0) {
+         $message[] = 'Email or number already exists!';
       } else {
-         $insert_user = $conn->prepare("INSERT INTO `users` (name, email, number, password, valid_id, security_question_1, security_answer_1, security_question_2, security_answer_2, security_question_3, security_answer_3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-         $insert_user->execute([$name, $email, $number, $cpass, $valid_id_folder, $sec_q1, $sec_a1, $sec_q2, $sec_a2, $sec_q3, $sec_a3]);
+         // ✅ Secure password hashing
+         $hashed_pass = password_hash($pass, PASSWORD_DEFAULT);
 
-         $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? AND password = ?");
-         $select_user->execute([$email, $pass]);
-         $row = $select_user->fetch(PDO::FETCH_ASSOC);
+         $insert_user = $conn->prepare("INSERT INTO `users`
+            (name, email, number, address, password, valid_id, 
+             security_question_1, security_answer_1, 
+             security_question_2, security_answer_2, 
+             security_question_3, security_answer_3) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-         if ($select_user->rowCount() > 0) {
-            $_SESSION['user_id'] = $row['id'];
-            $message[] = 'Registration successful! You can now log in.';
+         $insert_user->execute([
+            $name, $email, $number, $address, $hashed_pass, $valid_id_folder,
+            $sec_q1, $sec_a1, $sec_q2, $sec_a2, $sec_q3, $sec_a3
+         ]);
+
+         // ✅ Send Gmail Notification
+         $mail = new PHPMailer(true);
+
+         try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'luckybaltazar21@gmail.com'; // 🔴 Replace with your Gmail
+            $mail->Password   = 'hkrv uzzx saik zlpm';   // 🔴 Replace with Gmail App Password
+            $mail->SMTPSecure = 'tls';
+            $mail->Port       = 587;
+
+            $mail->setFrom('yourgmail@gmail.com', 'JB Printing Services');
+            $mail->addAddress($email, $name);
+
+            $mail->isHTML(true);
+            $mail->Subject = "Account Approval - JB Printing Services";
+            $mail->Body    = "
+               <h3>Hi $name,</h3>
+               <p>Your account has been successfully registered and approved.</p>
+               <p>You can now login by clicking the link below:</p>
+               <a href='http://localhost/JB_Printing_Services/login.php' 
+                  style='display:inline-block; background:#28a745; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;'>
+                  Login Now
+               </a>
+               <br><br>
+               <p>Thank you,<br>JB Printing Services</p>
+            ";
+
+            $mail->send();
+            $message[] = 'Registration successful! Please check your Gmail inbox for confirmation.';
+
+         } catch (Exception $e) {
+            $message[] = "Registration complete, but email could not be sent. Error: {$mail->ErrorInfo}";
          }
       }
    }
@@ -63,16 +127,11 @@ if (isset($_POST['submit'])) {
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Register</title>
 
-   <!-- Font Awesome for eye icon -->
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-
-   <!-- Custom CSS -->
    <link rel="stylesheet" href="css/style.css">
 
    <style>
-      .password-field {
-         position: relative;
-      }
+      .password-field { position: relative; }
       .password-field .toggle-eye {
          position: absolute;
          right: 15px;
@@ -80,6 +139,13 @@ if (isset($_POST['submit'])) {
          transform: translateY(-50%);
          cursor: pointer;
          color: #555;
+      }
+      .message {
+         background: #f8d7da;
+         color: #721c24;
+         padding: 10px;
+         border-radius: 5px;
+         margin-bottom: 10px;
       }
    </style>
 </head>
@@ -92,11 +158,32 @@ if (isset($_POST['submit'])) {
    <form action="" method="post" enctype="multipart/form-data">
       <h3>Register Now</h3>
 
-      <input type="text" name="name" required placeholder="Enter your Full Name" class="box" maxlength="50">
-      <input type="email" name="email" required placeholder="Enter your Email" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
-      <input type="number" name="number" required placeholder="Enter your Number" class="box" maxlength="11">
+      <?php
+      if (!empty($message) && is_array($message)) {
+         foreach ($message as $msg) {
+            echo '<div class="message">'.$msg.'</div>';
+         }
+      }
+      ?>
 
-      <!-- Password with Eye -->
+      <input type="text" name="name" required placeholder="Enter your Full Name" class="box" maxlength="50">
+
+      <!-- ✅ Gmail only -->
+      <input type="email" name="email" required 
+         placeholder="Enter your Gmail Address" 
+         class="box" maxlength="50" 
+         pattern="[a-zA-Z0-9._%+-]+@gmail\.com$"
+         title="Only Gmail addresses are allowed"
+         oninput="this.value = this.value.replace(/\s/g, '')">
+
+      <!-- ✅ Digits only -->
+      <input type="text" name="number" required 
+         placeholder="Enter your Number" 
+         class="box" maxlength="11"
+         oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+      <input type="text" name="address" required placeholder="Enter your Address" class="box" maxlength="255">
+
       <div class="password-field">
          <input type="password" id="pass" name="pass" required placeholder="Enter your Password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
          <i class="fas fa-eye toggle-eye" onclick="togglePassword('pass', this)"></i>
@@ -107,12 +194,11 @@ if (isset($_POST['submit'])) {
          <i class="fas fa-eye toggle-eye" onclick="togglePassword('cpass', this)"></i>
       </div>
 
-      <label style="font-size: 18px; font-weight: bold;">Upload Valid ID (Image or PDF)</label>
+      <label style="font-size: 16px; font-weight: bold;">Upload Valid ID (Image or PDF)</label>
       <input type="file" name="valid_id" accept=".jpg,.jpeg,.png,.pdf" class="box" required>
 
-      <label style="font-size: 18px; font-weight: bold;">Security Questions</label>
+      <label style="font-size: 16px; font-weight: bold;">Security Questions</label>
 
-      <!-- Question 1 -->
       <select name="security_question_1" class="box" required>
          <option value="">Select Question 1</option>
          <option value="What is your favorite movie?">What is your favorite movie?</option>
@@ -121,7 +207,6 @@ if (isset($_POST['submit'])) {
       </select>
       <input type="text" name="security_answer_1" placeholder="Answer for Question 1" class="box" required>
 
-      <!-- Question 2 -->
       <select name="security_question_2" class="box" required>
          <option value="">Select Question 2</option>
          <option value="What is your dream job?">What is your dream job?</option>
@@ -130,7 +215,6 @@ if (isset($_POST['submit'])) {
       </select>
       <input type="text" name="security_answer_2" placeholder="Answer for Question 2" class="box" required>
 
-      <!-- Question 3 -->
       <select name="security_question_3" class="box" required>
          <option value="">Select Question 3</option>
          <option value="What is your pet's name?">What is your pet's name?</option>
@@ -146,10 +230,8 @@ if (isset($_POST['submit'])) {
 
 <?php include 'components/footer.php'; ?>
 
-<!-- Custom JS -->
 <script src="js/script.js"></script>
 
-<!-- Show/Hide Password Script -->
 <script>
 function togglePassword(inputId, icon) {
    const input = document.getElementById(inputId);
