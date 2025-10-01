@@ -64,7 +64,7 @@ if (isset($_POST['submit'])) {
       if ($select_user->rowCount() > 0) {
          $message[] = 'Email or number already exists!';
       } else {
-         // ✅ Secure password hashing
+         // ✅ Secure password hashing - KEEP THIS AS password_hash
          $hashed_pass = password_hash($pass, PASSWORD_DEFAULT);
 
          $insert_user = $conn->prepare("INSERT INTO `users`

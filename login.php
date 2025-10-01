@@ -1,5 +1,4 @@
 <?php
-
 include 'components/connect.php';
 
 session_start();
@@ -30,23 +29,35 @@ if(isset($_SESSION['user_id'])){
    $user_id = '';
 };
 
+// ✅ Initialize message array for login
+$message = [];
+
 if(isset($_POST['submit'])){
 
    if (!$is_locked) {
       $email = $_POST['email'];
       $email = filter_var($email, FILTER_SANITIZE_STRING);
-      $pass = sha1($_POST['pass']);
-      $pass = filter_var($pass, FILTER_SANITIZE_STRING);
+      $pass = $_POST['pass']; // Don't hash here yet
 
-      $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? AND password = ?");
-      $select_user->execute([$email, $pass]);
+      $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ?");
+      $select_user->execute([$email]);
       $row = $select_user->fetch(PDO::FETCH_ASSOC);
 
       if($select_user->rowCount() > 0){
-         $_SESSION['user_id'] = $row['id'];
-         $_SESSION['login_attempts'] = 0; // reset attempts on success
-         $_SESSION['lockout_time'] = null;
-         header('location:index.php');
+         // ✅ Use password_verify to check the hashed password
+         if(password_verify($pass, $row['password'])){
+            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['login_attempts'] = 0; // reset attempts on success
+            $_SESSION['lockout_time'] = null;
+            header('location:index.php');
+            exit();
+         } else {
+            $_SESSION['login_attempts'] += 1;
+            if ($_SESSION['login_attempts'] >= 3) {
+               $_SESSION['lockout_time'] = time();
+            }
+            $message[] = 'Incorrect username or password!';
+         }
       } else {
          $_SESSION['login_attempts'] += 1;
          if ($_SESSION['login_attempts'] >= 3) {
@@ -60,14 +71,6 @@ if(isset($_POST['submit'])){
       $message[] = "Too many failed attempts. Please wait <span id='countdown'>$remaining</span> seconds.";
    }
 }
-
-if ($_SERVER["REQUEST_METHOD"] == "post") 
-{
-   $email = $_POST["email"];
-   $pass = $_POST["pass"];
-
-}
-
 ?>
 
 <!DOCTYPE html>
@@ -95,10 +98,19 @@ if ($_SERVER["REQUEST_METHOD"] == "post")
 
    <form action="" method="post">
       <h3>Login now</h3>
+      
+      <?php
+      if (!empty($message) && is_array($message)) {
+         foreach ($message as $msg) {
+            echo '<div class="message" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 10px;">'.$msg.'</div>';
+         }
+      }
+      ?>
+      
       <input type="email" name="email" required placeholder="Enter your email" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
       <input type="password" id="myInput" name="pass" required placeholder="Enter your password" class="box" maxlength="50" oninput="this.value = this.value.replace(/\s/g, '')">
-      <!--Show password start-->
       
+      <!--Show password start-->
       <p><input type="checkbox" onclick="myFunction()">   Show password</p>
       <script>
          function myFunction() {
@@ -111,8 +123,9 @@ if ($_SERVER["REQUEST_METHOD"] == "post")
          }
       </script>
       <!--Show password end-->
+      
       <br>
-     <input type="submit" value="login now" name="submit" class="btn" id="loginBtn" <?php if($is_locked) echo 'disabled'; ?>>
+      <input type="submit" value="login now" name="submit" class="btn" id="loginBtn" <?php if($is_locked) echo 'disabled'; ?>>
 
       <p>Don't have an account? <a href="register.php">Register now</a></p>
       <p><a href="forgot_password.php">Forgot your password?</a></p>
