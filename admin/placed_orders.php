@@ -10,6 +10,9 @@ if (isset($_SESSION['admin_id'])) {
    exit;
 }
 
+// Initialize messages array
+$messages = [];
+
 // Search functionality
 $search_query = '';
 $where_clause = '';
@@ -20,15 +23,15 @@ if (isset($_POST['search']) || isset($_GET['search'])) {
    }
 }
 
-// Update payment status and delivery date
+// Update order status and delivery date
 if (isset($_POST['update_order'])) {
    $order_id = $_POST['order_id'];
-   $payment_status = $_POST['payment_status'];
+   $order_status = $_POST['order_status'];
    $expected_delivery_date = $_POST['expected_delivery_date'];
    
-   $update_order = $conn->prepare("UPDATE `orders` SET payment_status = ?, expected_delivery_date = ? WHERE id = ?");
-   $update_order->execute([$payment_status, $expected_delivery_date, $order_id]);
-   $message[] = 'Order updated successfully!';
+   $update_order = $conn->prepare("UPDATE `orders` SET status = ?, expected_delivery_date = ? WHERE id = ?");
+   $update_order->execute([$order_status, $expected_delivery_date, $order_id]);
+   $messages[] = 'Order updated successfully!';
 }
 
 // Delete order
@@ -101,12 +104,17 @@ if (isset($_GET['delete'])) {
          font-size: 1.2rem;
          font-weight: 500;
          white-space: nowrap;
+         display: inline-block;
+         margin: 2px 0;
       }
 
-      .badge.pending { background: #eafce3; color: #2ecc71; }
-      .badge.preorder { background: #fff6db; color: #f39c12; }
-      .badge.received { background: #dff0ff; color: #3498db; }
-      .badge.delivered { background: #ffe5e5; color: #e74c3c; }
+      /* Order Status Badges */
+      .badge.status-pending { background: #fff3cd; color: #856404; }
+      .badge.status-confirmed { background: #d1ecf1; color: #0c5460; }
+      .badge.status-processing { background: #cce7ff; color: #004085; }
+      .badge.status-shipped { background: #d4edda; color: #155724; }
+      .badge.status-delivered { background: #d1e7dd; color: #0f5132; }
+      .badge.status-cancelled { background: #f8d7da; color: #721c24; }
 
       form.inline-form {
          display: flex;
@@ -118,6 +126,8 @@ if (isset($_GET['delete'])) {
       form.inline-form input[type="date"] {
          padding: 0.5rem;
          font-size: 1.3rem;
+         border: 1px solid #ddd;
+         border-radius: 5px;
       }
 
       .btn, .delete-btn {
@@ -128,16 +138,25 @@ if (isset($_GET['delete'])) {
          border: none;
          border-radius: 5px;
          cursor: pointer;
+         text-decoration: none;
+         text-align: center;
       }
 
       .btn {
          background: #27ae60;
       }
 
+      .btn:hover {
+         background: #219a52;
+      }
+
       .delete-btn {
          background: #e74c3c;
-         text-decoration: none;
          margin-top: 0.5rem;
+      }
+
+      .delete-btn:hover {
+         background: #c0392b;
       }
 
       .heading {
@@ -258,6 +277,80 @@ if (isset($_GET['delete'])) {
          font-size: 1.3rem;
          color: #666;
       }
+
+      /* BIGGER AND MORE PROMINENT MESSAGE STYLES */
+      .message {
+         padding: 1rem 1rem;
+         background: linear-gradient(135deg, #d4edda, #c3e6cb);
+         color: #155724;
+         border-radius: 8px;
+         margin-bottom: 2rem;
+         text-align: center;
+         max-width: 1200px;
+         margin-left: auto;
+         margin-right: auto;
+         border: 1px solid #28a745;
+         box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+         font-size: 2rem;
+         font-weight: bold;
+         position: relative;
+         animation: slideIn 0.5s ease-out;
+      }
+
+      .message::before {
+         content: "✓";
+         position: absolute;
+         left: 2rem;
+         top: 50%;
+         transform: translateY(-50%);
+         font-size: 2.5rem;
+         color: #28a745;
+      }
+
+      @keyframes slideIn {
+         from {
+            opacity: 0;
+            transform: translateY(-20px);
+         }
+         to {
+            opacity: 1;
+            transform: translateY(0);
+         }
+      }
+
+      /* Auto-hide message after 5 seconds */
+      .message.auto-hide {
+         animation: slideIn 0.5s ease-out, slideOut 0.5s ease-in 4.5s forwards;
+      }
+
+      @keyframes slideOut {
+         from {
+            opacity: 1;
+            transform: translateY(0);
+         }
+         to {
+            opacity: 0;
+            transform: translateY(-20px);
+         }
+      }
+
+      /* Success message specific styles */
+      .message.success {
+         background: linear-gradient(135deg, #d4edda, #c3e6cb);
+         border-color: #28a745;
+         color: #155724;
+      }
+
+      .message.error {
+         background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+         border-color: #dc3545;
+         color: #721c24;
+      }
+
+      .message.error::before {
+         content: "⚠";
+         color: #dc3545;
+      }
    </style>
 </head>
 <body>
@@ -266,6 +359,14 @@ if (isset($_GET['delete'])) {
 
 <section class="placed-orders">
    <h1 class="heading">Placed Orders</h1>
+
+   <?php
+   if(!empty($messages)){
+      foreach($messages as $message){
+         echo '<div class="message success auto-hide">'.$message.'</div>';
+      }
+   }
+   ?>
 
    <!-- Search Container -->
    <div class="search-container">
@@ -298,7 +399,7 @@ if (isset($_GET['delete'])) {
                <th>GCash Ref</th>
                <th>Placed On</th>
                <th>Delivery</th>
-               <th>Status</th>
+               <th>Order Status</th>
                <th class="actions-cell">Actions</th>
             </tr>
          </thead>
@@ -321,10 +422,9 @@ if (isset($_GET['delete'])) {
                   $placed_on = date('d M Y, h:i A', strtotime($order['placed_on']));
                   $expected_delivery = empty($order['expected_delivery_date']) ? 'Not set' : date('d M Y', strtotime($order['expected_delivery_date']));
 
-                  $status_class = 'Pending';
-                  if ($order['payment_status'] == 'Pre Order') $status_class = 'preorder';
-                  elseif ($order['payment_status'] == 'To received') $status_class = 'received';
-                  elseif ($order['payment_status'] == 'Delivered') $status_class = 'delivered';
+                  // Order status classes
+                  $order_status = $order['status'] ?? 'pending';
+                  $order_status_class = 'status-' . $order_status;
          ?>
             <tr>
                <td class="order-id"><?= htmlspecialchars($order['id']) ?></td>
@@ -339,17 +439,23 @@ if (isset($_GET['delete'])) {
                </td>
                <td><?= $placed_on ?></td>
                <td><?= $expected_delivery ?></td>
-               <td><span class="badge <?= $status_class ?>"><?= htmlspecialchars($order['payment_status']) ?></span></td>
+               <td>
+                  <span class="badge <?= $order_status_class ?>">
+                     <?= ucfirst($order_status) ?>
+                  </span>
+               </td>
                <td>
                   <form action="" method="POST" class="inline-form">
                      <input type="hidden" name="order_id" value="<?= $order['id']; ?>">
-                     <select name="payment_status">
-                        <option disabled selected>Update status</option>
-                        <option value="Pending" <?= $order['payment_status'] == 'Pending' ? 'selected' : '' ?>>Pending</option>
-                        <option value="Pre Order" <?= $order['payment_status'] == 'Pre Order' ? 'selected' : '' ?>>Pre Order</option>
-                        <option value="To received" <?= $order['payment_status'] == 'To received' ? 'selected' : '' ?>>To received</option>
-                        <option value="Delivered" <?= $order['payment_status'] == 'Delivered' ? 'selected' : '' ?>>Delivered</option>
+                     
+                     <select name="order_status">
+                        <option value="pending" <?= $order_status == 'pending' ? 'selected' : '' ?>>Pending</option>
+                        <option value="Pre Order" <?= $order_status == 'Pre Order' ? 'selected' : '' ?>>Pre Order</option>
+                        <option value="To Received" <?= $order_status == 'To Received' ? 'selected' : '' ?>>To Received</option>
+                        <option value="delivered" <?= $order_status == 'delivered' ? 'selected' : '' ?>>Delivered</option>
+
                      </select>
+                     
                      <input type="date" name="expected_delivery_date" value="<?= $order['expected_delivery_date']; ?>" min="<?= date('Y-m-d'); ?>">
                      <input type="submit" name="update_order" value="Update Order" class="btn">
                   </form>
@@ -362,7 +468,9 @@ if (isset($_GET['delete'])) {
                      <span style="color: #999; font-size: 1.2rem; margin-top: 0.5rem; display: block;">No design uploaded</span>
                   <?php endif; ?>
 
-                  <a href="placed_orders.php?delete=<?= $order['id']; ?>" class="delete-btn" onclick="return confirm('Delete this order?')">Delete</a>
+                  <a href="placed_orders.php?delete=<?= $order['id']; ?>" class="delete-btn" onclick="return confirm('Delete this order?')">
+                     <i class="fas fa-trash"></i> Delete Order
+                  </a>
                </td>
             </tr>
          <?php
@@ -418,6 +526,16 @@ document.addEventListener('keydown', function(event) {
    if (event.key === 'Escape') {
       modal.style.display = 'none';
    }
+});
+
+// Auto-hide success messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+   const messages = document.querySelectorAll('.message.auto-hide');
+   messages.forEach(message => {
+      setTimeout(() => {
+         message.style.display = 'none';
+      }, 5000);
+   });
 });
 </script>
 </body>

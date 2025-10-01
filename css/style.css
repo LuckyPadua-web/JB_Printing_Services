@@ -1088,3 +1088,54 @@ section {
     text-align: center;
   }
 }
+
+/* Notifications Styles */
+.notifications .box-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.notification-box {
+    background: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #007bff;
+}
+
+.notification-box.unread {
+    border-left-color: #28a745;
+    background: #f8fff9;
+}
+
+.notification-box .content p {
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.notification-box .date {
+    color: #666;
+    font-size: 14px;
+}
+
+.header-actions {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+/* Admin Styles */
+.orders .box {
+    background: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.orders .dropdown {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin: 10px 0;
+}
