@@ -91,6 +91,24 @@ if (isset($_POST['submit'])) {
          $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref, design_file, expected_delivery_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
          $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref, $design_file, $expected_delivery_date]);
 
+         // Get the inserted order ID
+         $order_id = $conn->lastInsertId();
+
+         // Insert order details for each item
+         if ($direct_order && $direct_product) {
+            // For direct orders, insert the single product
+            $insert_detail = $conn->prepare("INSERT INTO `order_details` (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+            $insert_detail->execute([$order_id, $direct_product['id'], $qty, $direct_product['price']]);
+         } else {
+            // For cart orders, insert all cart items
+            $select_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
+            $select_cart->execute([$user_id]);
+            while($cart_item = $select_cart->fetch(PDO::FETCH_ASSOC)) {
+               $insert_detail = $conn->prepare("INSERT INTO `order_details` (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+               $insert_detail->execute([$order_id, $cart_item['pid'], $cart_item['quantity'], $cart_item['price']]);
+            }
+         }
+
          // Only delete cart if it's not a direct order
          if (!$direct_order) {
             $delete_cart = $conn->prepare("DELETE FROM `cart` WHERE user_id = ?");

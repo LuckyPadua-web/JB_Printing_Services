@@ -4,14 +4,12 @@ include '../components/connect.php';
 
 session_start();
 
-
 if(isset($_SESSION['admin_id'])){
    $admin_id = $_SESSION['admin_id'];
 }else{
    $admin_id = '';
    header('location:admin_login.php');
 };
-
 
 if(isset($_POST['update'])){
 
@@ -22,6 +20,10 @@ if(isset($_POST['update'])){
    $price = $_POST['price'];
    $price = filter_var($price, FILTER_SANITIZE_STRING);
    
+   // Get old product details before update
+   $get_old_product = $conn->prepare("SELECT * FROM `products` WHERE id = ?");
+   $get_old_product->execute([$pid]);
+   $old_product = $get_old_product->fetch(PDO::FETCH_ASSOC);
 
    $update_product = $conn->prepare("UPDATE `products` SET name = ?, price = ? WHERE id = ?");
    $update_product->execute([$name, $price, $pid]);
@@ -47,6 +49,120 @@ if(isset($_POST['update'])){
       }
    }
 
+   // Send notification to customers who ordered this product
+   try {
+      // Get customers who ordered this product
+      $select_customers = $conn->prepare("
+         SELECT DISTINCT u.email, u.name as customer_name 
+         FROM `users` u 
+         JOIN `orders` o ON u.id = o.user_id 
+         JOIN `order_details` od ON o.id = od.order_id 
+         WHERE od.product_id = ? AND u.email IS NOT NULL AND u.email != ''
+      ");
+      $select_customers->execute([$pid]);
+      
+      if($select_customers->rowCount() > 0){
+         // Include PHPMailer
+         if(file_exists('../vendor/autoload.php')){
+            require_once '../vendor/autoload.php';
+            
+            while($customer = $select_customers->fetch(PDO::FETCH_ASSOC)){
+               try {
+                  $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+                  
+                  // SMTP configuration (update with your details)
+                  $mail->isSMTP();
+                  $mail->Host = 'smtp.gmail.com';
+                  $mail->SMTPAuth = true;
+                  $mail->Username = 'your-email@gmail.com'; // Your Gmail
+                  $mail->Password = 'your-app-password'; // Gmail App Password
+                  $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                  $mail->Port = 587;
+                  
+                  // Recipients
+                  $mail->setFrom('noreply@jbprintingservices.com', 'JB Printing Services');
+                  $mail->addAddress($customer['email'], $customer['customer_name']);
+                  $mail->addReplyTo('info@jbprintingservices.com', 'JB Printing Services');
+                  
+                  // Content
+                  $mail->isHTML(true);
+                  $mail->Subject = 'Product Update Notification - ' . $name;
+                  
+                  $email_body = "
+                  <html>
+                  <head>
+                     <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: #4285f4; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                        .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                        .update-info { background: white; padding: 15px; border-left: 4px solid #34a853; margin: 15px 0; border-radius: 4px; }
+                        .product-details { background: #e8f5e8; padding: 15px; border-radius: 4px; margin: 10px 0; }
+                     </style>
+                  </head>
+                  <body>
+                     <div class='container'>
+                        <div class='header'>
+                           <h2>JB Printing Services</h2>
+                           <p>Product Update Notification</p>
+                        </div>
+                        <div class='content'>
+                           <h3>Dear " . htmlspecialchars($customer['customer_name']) . ",</h3>
+                           <p>We're writing to inform you about an update to a product you've previously ordered:</p>
+                           
+                           <div class='update-info'>
+                              <h4>🔄 Product Updated: <strong>" . htmlspecialchars($name) . "</strong></h4>
+                              <div class='product-details'>
+                                 <p><strong>Product Name:</strong> " . htmlspecialchars($name) . "</p>
+                                 <p><strong>New Price:</strong> ₱" . number_format($price, 2) . "</p>
+                                 " . ($old_product['price'] != $price ? 
+                                    "<p><strong>Previous Price:</strong> ₱" . number_format($old_product['price'], 2) . "</p>" : "") . "
+                              </div>
+                           </div>
+                           
+                           <p>This update may affect products in your previous orders. If you have any questions or concerns about this change, please don't hesitate to contact us.</p>
+                           
+                           <p>Thank you for your understanding and continued support!</p>
+                           
+                           <p>Best regards,<br><strong>JB Printing Services Team</strong></p>
+                        </div>
+                        <div class='footer'>
+                           <p>This is an automated notification. Please do not reply to this email.</p>
+                           <p>If you have questions, contact us at: info@jbprintingservices.com</p>
+                        </div>
+                     </div>
+                  </body>
+                  </html>
+                  ";
+                  
+                  $mail->Body = $email_body;
+                  
+                  // Plain text version
+                  $mail->AltBody = "Dear " . $customer['customer_name'] . ",\n\n" .
+                                  "We're writing to inform you about an update to a product you've previously ordered:\n\n" .
+                                  "Product Updated: " . $name . "\n" .
+                                  "New Price: ₱" . number_format($price, 2) . "\n" .
+                                  ($old_product['price'] != $price ? 
+                                   "Previous Price: ₱" . number_format($old_product['price'], 2) . "\n" : "") .
+                                  "\nThis update may affect products in your previous orders. If you have any questions, please contact us.\n\n" .
+                                  "Best regards,\nJB Printing Services Team";
+                  
+                  $mail->send();
+                  
+               } catch (Exception $e) {
+                  // Log error but don't stop the process
+                  error_log("Email sending failed for " . $customer['email'] . ": " . $e->getMessage());
+               }
+            }
+            
+            $message[] = 'Product updated and notifications sent to customers!';
+         }
+      }
+   } catch (Exception $e) {
+      // If email sending fails, just continue
+      $message[] = 'Product updated! (Email notifications skipped)';
+   }
 }
 
 ?>
@@ -65,6 +181,22 @@ if(isset($_POST['update'])){
    <!-- custom css file link  -->
    <link rel="stylesheet" href="../css/admin_style.css">
 
+   <style>
+      .notification-info {
+         background: #e8f5e8;
+         border: 1px solid #34a853;
+         border-radius: 8px;
+         padding: 15px;
+         margin: 15px 0;
+         font-size: 1.4rem;
+         color: #2d5016;
+      }
+
+      .notification-info i {
+         color: #34a853;
+         margin-right: 10px;
+      }
+   </style>
 </head>
 <body>
 
@@ -75,6 +207,11 @@ if(isset($_POST['update'])){
 <section class="update-product">
 
    <h1 class="heading">update product</h1>
+
+   <div class="notification-info">
+      <i class="fas fa-info-circle"></i>
+      <strong>Notification:</strong> When you update a product, customers who previously ordered this item will receive an email notification with the product details (no order numbers included).
+   </div>
 
    <?php
       $update_id = $_GET['update'];
@@ -110,15 +247,6 @@ if(isset($_POST['update'])){
 </section>
 
 <!-- update product section ends -->
-
-
-
-
-
-
-
-
-
 
 <!-- custom js file link  -->
 <script src="../js/admin_script.js"></script>
