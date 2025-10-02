@@ -24,6 +24,60 @@ if (isset($_POST['search']) || isset($_GET['search'])) {
    }
 }
 
+// Handle cancel approval/disapproval
+if (isset($_POST['process_cancel'])) {
+   $order_id = $_POST['order_id'];
+   $approval_status = $_POST['approval_status'];
+   $admin_message = $_POST['admin_message'] ?? '';
+   
+   // Get current order details
+   $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
+   $get_order->execute([$order_id]);
+   $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
+   
+   if ($order_data) {
+      if ($approval_status == 'approved') {
+         // Approve the cancellation - update status to cancelled
+         $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_approval_status = 'approved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
+         $update_order->execute([$admin_message, $order_id]);
+         $messages[] = ['text' => 'Order cancellation approved successfully!', 'type' => 'success'];
+         
+         // Send email notification to customer about approval
+         $customer_email = $order_data['email'];
+         $customer_name = $order_data['name'];
+         $order_details = "Order ID: #" . $order_id . "\n";
+         $order_details .= "Your cancellation request has been APPROVED.\n";
+         if (!empty($admin_message)) {
+            $order_details .= "Admin Message: " . $admin_message . "\n";
+         }
+         $order_details .= "Your order has been cancelled and any refund will be processed accordingly.";
+         
+         sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation approved', $order_details);
+         
+      } else {
+         // Disapprove the cancellation - keep original status
+         $update_order = $conn->prepare("UPDATE `orders` SET cancel_approval_status = 'disapproved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
+         $update_order->execute([$admin_message, $order_id]);
+         $messages[] = ['text' => 'Order cancellation disapproved. Customer will be notified.', 'type' => 'warning'];
+         
+         // Send email notification to customer about disapproval
+         $customer_email = $order_data['email'];
+         $customer_name = $order_data['name'];
+         $order_details = "Order ID: #" . $order_id . "\n";
+         $order_details .= "Your cancellation request has been DISAPPROVED.\n";
+         $order_details .= "Your order will continue to be processed as normal.\n";
+         if (!empty($admin_message)) {
+            $order_details .= "Admin Message: " . $admin_message . "\n";
+         }
+         $order_details .= "If you have concerns, please contact our support team.";
+         
+         sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation disapproved', $order_details);
+      }
+   } else {
+      $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
+   }
+}
+
 // Update order status and delivery date
 if (isset($_POST['update_order'])) {
    $order_id = $_POST['order_id'];
@@ -151,6 +205,70 @@ if (isset($_GET['delete'])) {
       .badge.status-shipped { background: #d4edda; color: #155724; }
       .badge.status-delivered { background: #d1e7dd; color: #0f5132; }
       .badge.status-cancelled { background: #f8d7da; color: #721c24; }
+      
+      /* Cancel status badges */
+      .cancel-status {
+         display: block;
+         margin-top: 5px;
+         padding: 2px 8px;
+         border-radius: 10px;
+         font-size: 1.1rem;
+         font-weight: 500;
+      }
+      
+      .cancel-pending {
+         background: #fff3cd;
+         color: #856404;
+         border: 1px solid #ffc107;
+      }
+      
+      .cancel-approved {
+         background: #d4edda;
+         color: #155724;
+         border: 1px solid #28a745;
+      }
+      
+      .cancel-disapproved {
+         background: #f8d7da;
+         color: #721c24;
+         border: 1px solid #dc3545;
+      }
+      
+      .cancel-info {
+         background: #f8f9fa;
+         border: 1px solid #dee2e6;
+         border-radius: 5px;
+         padding: 10px;
+         margin-top: 10px;
+         font-size: 1.2rem;
+      }
+      
+      .cancel-reason {
+         font-style: italic;
+         color: #666;
+         margin-bottom: 5px;
+      }
+      
+      .btn-approve {
+         background: #28a745;
+         color: white;
+         padding: 5px 10px;
+         border: none;
+         border-radius: 3px;
+         cursor: pointer;
+         margin-right: 5px;
+         font-size: 1.2rem;
+      }
+      
+      .btn-disapprove {
+         background: #dc3545;
+         color: white;
+         padding: 5px 10px;
+         border: none;
+         border-radius: 3px;
+         cursor: pointer;
+         font-size: 1.2rem;
+      }
 
       form.inline-form {
          display: flex;
@@ -419,6 +537,179 @@ if (isset($_GET['delete'])) {
          color: #721c24;
          border: 1px solid #f5c6cb;
       }
+      
+      /* Cancel Approval Modal Styles */
+      .approval-modal {
+         display: none;
+         position: fixed;
+         z-index: 1001;
+         left: 0;
+         top: 0;
+         width: 100%;
+         height: 100%;
+         overflow: auto;
+         background-color: rgba(0,0,0,0.8);
+      }
+      
+      .approval-modal-content {
+         background-color: #fefefe;
+         margin: 5% auto;
+         padding: 30px;
+         border-radius: 15px;
+         width: 90%;
+         max-width: 600px;
+         position: relative;
+         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+      
+      .approval-modal-header {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin-bottom: 20px;
+         padding-bottom: 15px;
+         border-bottom: 2px solid #eee;
+      }
+      
+      .approval-modal-title {
+         color: #333;
+         margin: 0;
+         font-size: 2.2rem;
+      }
+      
+      .modal-close {
+         color: #aaa;
+         font-size: 28px;
+         font-weight: bold;
+         cursor: pointer;
+         background: none;
+         border: none;
+         padding: 0;
+         width: 30px;
+         height: 30px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+      }
+      
+      .modal-close:hover {
+         color: #000;
+      }
+      
+      .order-info-section {
+         background: #f8f9fa;
+         padding: 15px;
+         border-radius: 8px;
+         margin-bottom: 20px;
+      }
+      
+      .order-info-title {
+         font-weight: bold;
+         color: #333;
+         margin-bottom: 10px;
+         font-size: 1.6rem;
+      }
+      
+      .cancel-reason-display {
+         background: #fff3cd;
+         padding: 15px;
+         border-radius: 8px;
+         border-left: 4px solid #ffc107;
+         margin-bottom: 20px;
+      }
+      
+      .cancel-reason-label {
+         font-weight: bold;
+         color: #856404;
+         margin-bottom: 8px;
+         font-size: 1.4rem;
+      }
+      
+      .cancel-reason-text {
+         color: #333;
+         font-style: italic;
+         font-size: 1.3rem;
+         line-height: 1.4;
+      }
+      
+      .approval-form {
+         margin-top: 20px;
+      }
+      
+      .form-group {
+         margin-bottom: 20px;
+      }
+      
+      .form-label {
+         display: block;
+         margin-bottom: 8px;
+         font-weight: 600;
+         color: #333;
+         font-size: 1.4rem;
+      }
+      
+      .admin-message-textarea {
+         width: 100%;
+         padding: 12px;
+         border: 2px solid #ddd;
+         border-radius: 8px;
+         resize: vertical;
+         min-height: 100px;
+         font-family: inherit;
+         font-size: 1.3rem;
+         box-sizing: border-box;
+      }
+      
+      .admin-message-textarea:focus {
+         border-color: #007bff;
+         outline: none;
+      }
+      
+      .approval-actions {
+         display: flex;
+         gap: 15px;
+         justify-content: flex-end;
+         margin-top: 25px;
+         padding-top: 20px;
+         border-top: 1px solid #eee;
+      }
+      
+      .approval-btn {
+         padding: 12px 25px;
+         border: none;
+         border-radius: 8px;
+         cursor: pointer;
+         font-weight: 600;
+         font-size: 1.4rem;
+         transition: all 0.3s ease;
+      }
+      
+      .btn-approve-modal {
+         background: #28a745;
+         color: white;
+      }
+      
+      .btn-approve-modal:hover {
+         background: #218838;
+      }
+      
+      .btn-disapprove-modal {
+         background: #dc3545;
+         color: white;
+      }
+      
+      .btn-disapprove-modal:hover {
+         background: #c82333;
+      }
+      
+      .btn-cancel-modal {
+         background: #6c757d;
+         color: white;
+      }
+      
+      .btn-cancel-modal:hover {
+         background: #5a6268;
+      }
    </style>
 </head>
 <body>
@@ -470,6 +761,7 @@ if (isset($_GET['delete'])) {
                <th>Placed On</th>
                <th>Delivery</th>
                <th>Order Status</th>
+               <th>Cancel Status</th>
                <th class="actions-cell">Actions</th>
             </tr>
          </thead>
@@ -515,6 +807,43 @@ if (isset($_GET['delete'])) {
                   </span>
                </td>
                <td>
+                  <?php if ($order_status == 'cancelled' && !empty($order['cancel_reason'])): ?>
+                     <?php if (empty($order['cancel_approval_status'])): ?>
+                        <span class="cancel-status cancel-pending">
+                           <i class="fas fa-clock"></i> Pending Approval
+                        </span>
+                        <div class="cancel-info">
+                           <div class="cancel-reason">
+                              <strong>Reason:</strong> <?= htmlspecialchars($order['cancel_reason']) ?>
+                           </div>
+                           <button class="btn-approve" onclick="openApprovalModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['name']) ?>', '<?= htmlspecialchars($order['cancel_reason']) ?>')">
+                              <i class="fas fa-check"></i> Review
+                           </button>
+                        </div>
+                     <?php elseif ($order['cancel_approval_status'] == 'approved'): ?>
+                        <span class="cancel-status cancel-approved">
+                           <i class="fas fa-check-circle"></i> Approved
+                        </span>
+                        <?php if (!empty($order['admin_response_message'])): ?>
+                           <div class="cancel-info">
+                              <small>Admin Note: <?= htmlspecialchars($order['admin_response_message']) ?></small>
+                           </div>
+                        <?php endif; ?>
+                     <?php elseif ($order['cancel_approval_status'] == 'disapproved'): ?>
+                        <span class="cancel-status cancel-disapproved">
+                           <i class="fas fa-times-circle"></i> Disapproved
+                        </span>
+                        <?php if (!empty($order['admin_response_message'])): ?>
+                           <div class="cancel-info">
+                              <small>Admin Note: <?= htmlspecialchars($order['admin_response_message']) ?></small>
+                           </div>
+                        <?php endif; ?>
+                     <?php endif; ?>
+                  <?php else: ?>
+                     <span style="color: #999;">-</span>
+                  <?php endif; ?>
+               </td>
+               <td>
                   <form action="" method="POST" class="inline-form">
                      <input type="hidden" name="order_id" value="<?= $order['id']; ?>">
                      
@@ -547,9 +876,9 @@ if (isset($_GET['delete'])) {
                }
             } else {
                if (!empty($search_query)) {
-                  echo '<tr><td colspan="8">No orders found matching your search criteria.</td></tr>';
+                  echo '<tr><td colspan="9">No orders found matching your search criteria.</td></tr>';
                } else {
-                  echo '<tr><td colspan="8">No orders placed yet!</td></tr>';
+                  echo '<tr><td colspan="9">No orders placed yet!</td></tr>';
                }
             }
          ?>
@@ -564,6 +893,50 @@ if (isset($_GET['delete'])) {
       <span class="close">&times;</span>
       <h3 class="modal-title">Design Preview</h3>
       <img id="designImage" class="design-image" src="" alt="Design Preview">
+   </div>
+</div>
+
+<!-- Cancel Approval Modal -->
+<div id="approvalModal" class="approval-modal">
+   <div class="approval-modal-content">
+      <div class="approval-modal-header">
+         <h3 class="approval-modal-title">Cancel Order Request</h3>
+         <button class="modal-close" onclick="closeApprovalModal()">&times;</button>
+      </div>
+      
+      <div class="order-info-section">
+         <div class="order-info-title">Order Information</div>
+         <div id="orderInfo"></div>
+      </div>
+      
+      <div class="cancel-reason-display">
+         <div class="cancel-reason-label">Customer's Cancellation Reason:</div>
+         <div class="cancel-reason-text" id="cancelReasonText"></div>
+      </div>
+      
+      <form id="approvalForm" method="POST" class="approval-form">
+         <input type="hidden" name="process_cancel" value="1">
+         <input type="hidden" name="order_id" id="approvalOrderId">
+         <input type="hidden" name="approval_status" id="approvalStatus">
+         
+         <div class="form-group">
+            <label class="form-label" for="adminMessage">Admin Response Message (Optional):</label>
+            <textarea name="admin_message" id="adminMessage" class="admin-message-textarea" 
+                      placeholder="Add any message for the customer regarding this decision..."></textarea>
+         </div>
+         
+         <div class="approval-actions">
+            <button type="button" class="approval-btn btn-cancel-modal" onclick="closeApprovalModal()">
+               <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="approval-btn btn-disapprove-modal" onclick="submitApproval('disapproved')">
+               <i class="fas fa-ban"></i> Disapprove Cancellation
+            </button>
+            <button type="button" class="approval-btn btn-approve-modal" onclick="submitApproval('approved')">
+               <i class="fas fa-check"></i> Approve Cancellation
+            </button>
+         </div>
+      </form>
    </div>
 </div>
 
@@ -586,8 +959,9 @@ closeBtn.onclick = function() {
 
 // Close modal when clicking outside of it
 window.onclick = function(event) {
-   if (event.target == modal) {
+   if (event.target == modal || event.target == document.getElementById('approvalModal')) {
       modal.style.display = 'none';
+      closeApprovalModal();
    }
 }
 
@@ -595,8 +969,51 @@ window.onclick = function(event) {
 document.addEventListener('keydown', function(event) {
    if (event.key === 'Escape') {
       modal.style.display = 'none';
+      closeApprovalModal();
    }
 });
+
+// Cancel Approval Modal Functions
+function openApprovalModal(orderId, customerName, cancelReason) {
+   const approvalModal = document.getElementById('approvalModal');
+   const orderInfo = document.getElementById('orderInfo');
+   const cancelReasonText = document.getElementById('cancelReasonText');
+   const approvalOrderId = document.getElementById('approvalOrderId');
+   
+   // Set order information
+   orderInfo.innerHTML = `
+      <strong>Order ID:</strong> #${orderId}<br>
+      <strong>Customer:</strong> ${customerName}
+   `;
+   
+   // Set cancel reason
+   cancelReasonText.textContent = cancelReason || 'No reason provided';
+   
+   // Set order ID in form
+   approvalOrderId.value = orderId;
+   
+   // Clear admin message
+   document.getElementById('adminMessage').value = '';
+   
+   // Show modal
+   approvalModal.style.display = 'block';
+}
+
+function closeApprovalModal() {
+   const approvalModal = document.getElementById('approvalModal');
+   approvalModal.style.display = 'none';
+}
+
+function submitApproval(status) {
+   // Confirm the action
+   const action = status === 'approved' ? 'approve' : 'disapprove';
+   const confirmMessage = `Are you sure you want to ${action} this cancellation request?`;
+   
+   if (confirm(confirmMessage)) {
+      document.getElementById('approvalStatus').value = status;
+      document.getElementById('approvalForm').submit();
+   }
+}
 
 // Auto-hide success messages after 5 seconds
 document.addEventListener('DOMContentLoaded', function() {

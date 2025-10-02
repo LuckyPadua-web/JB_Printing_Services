@@ -68,10 +68,10 @@ if(isset($_POST['cancel_order'])){
       $cancellable_statuses = ['pending', 'confirmed'];
       
       if(in_array($current_status, $cancellable_statuses)){
-         // Update order status to cancelled
-         $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_reason = ?, cancelled_at = NOW() WHERE id = ? AND user_id = ?");
+         // Update order status to cancelled and reset approval status for new requests
+         $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_reason = ?, cancelled_at = NOW(), cancel_approval_status = NULL, admin_response_message = NULL, cancel_processed_at = NULL WHERE id = ? AND user_id = ?");
          $update_order->execute([$cancel_reason, $order_id, $user_id]);
-         $message[] = 'Order has been cancelled successfully!';
+         $message[] = 'Order cancellation request has been submitted successfully! Please wait for admin approval.';
       }else{
          $message[] = 'This order cannot be cancelled as it has already been ' . $current_status . '. Please contact support.';
       }
@@ -608,6 +608,31 @@ if(isset($_POST['cancel_order'])){
          </div>
          <?php endif; ?>
          
+         <!-- Admin Response for Cancelled Orders -->
+         <?php if (!empty($fetch_orders['cancel_approval_status'])): ?>
+         <div style="margin-top: 15px; padding: 15px; border-radius: 8px; 
+                     <?php if ($fetch_orders['cancel_approval_status'] == 'disapproved'): ?>
+                        background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24;
+                     <?php else: ?>
+                        background: #d4edda; border-left: 4px solid #28a745; color: #155724;
+                     <?php endif; ?>">
+            <div style="font-weight: bold; margin-bottom: 8px;">
+               <i class="fas fa-<?= $fetch_orders['cancel_approval_status'] == 'approved' ? 'check-circle' : 'times-circle' ?>"></i>
+               Cancellation Request <?= ucfirst($fetch_orders['cancel_approval_status']) ?>
+            </div>
+            <?php if (!empty($fetch_orders['admin_response_message'])): ?>
+            <div style="font-style: italic;">
+               Admin Message: <?= htmlspecialchars($fetch_orders['admin_response_message']); ?>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($fetch_orders['cancel_processed_at'])): ?>
+            <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">
+               Processed on <?= date('F d, Y g:i A', strtotime($fetch_orders['cancel_processed_at'])); ?>
+            </div>
+            <?php endif; ?>
+         </div>
+         <?php endif; ?>
+         
          <!-- Rating Section -->
          <?php if($fetch_orders['status'] == 'received' || $fetch_orders['status'] == 'delivered'): ?>
             <?php if($has_rating): ?>
@@ -664,9 +689,11 @@ if(isset($_POST['cancel_order'])){
             </form>
             <?php endif; ?>
             
-            <?php if(in_array($fetch_orders['status'] ?? '', ['pending', 'confirmed'])): ?>
+            <?php if(in_array($fetch_orders['status'] ?? '', ['pending', 'confirmed']) && 
+                     (empty($fetch_orders['cancel_approval_status']) || $fetch_orders['cancel_approval_status'] == 'disapproved')): ?>
             <button type="button" class="action-btn btn-cancel" onclick="openCancelModal(<?= $fetch_orders['id']; ?>)">
-               <i class="fas fa-times-circle"></i> Cancel Order
+               <i class="fas fa-times-circle"></i> 
+               <?= !empty($fetch_orders['cancel_approval_status']) && $fetch_orders['cancel_approval_status'] == 'disapproved' ? 'Request Cancel Again' : 'Cancel Order' ?>
             </button>
             <?php endif; ?>
             
