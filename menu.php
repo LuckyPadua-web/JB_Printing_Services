@@ -82,13 +82,16 @@ include 'components/add_cart.php';
       <?php
          $select_products = $conn->prepare("
             SELECT p.*, 
-                   COALESCE(SUM(od.quantity), 0) as total_sold,
+                   COALESCE((
+                     SELECT SUM(od2.quantity) 
+                     FROM `order_details` od2 
+                     JOIN `orders` o2 ON od2.order_id = o2.id 
+                     WHERE od2.product_id = p.id AND o2.status IN ('delivered', 'received')
+                   ), 0) as total_sold,
                    COALESCE(AVG(r.rating), 0) as average_rating,
-                   COUNT(r.id) as total_reviews
+                   COUNT(DISTINCT r.id) as total_reviews
             FROM `products` p
-            LEFT JOIN `order_details` od ON p.id = od.product_id
-            LEFT JOIN `orders` o ON od.order_id = o.id 
-            LEFT JOIN `reviews` r ON p.id = r.product_id
+            LEFT JOIN `order_ratings` r ON p.id = r.product_id
             GROUP BY p.id
             ORDER BY p.id DESC
          ");
