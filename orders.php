@@ -37,6 +37,35 @@ if(isset($_POST['confirm_receipt'])){
    $message[] = 'Order marked as received! You can now rate your experience.';
 }
 
+// Add cancel order functionality
+if(isset($_POST['cancel_order'])){
+   $order_id = $_POST['order_id'];
+   $cancel_reason = $_POST['cancel_reason'] ?? '';
+   
+   // Check if order can be cancelled (only pending or confirmed orders can be cancelled)
+   $check_order = $conn->prepare("SELECT status FROM `orders` WHERE id = ? AND user_id = ?");
+   $check_order->execute([$order_id, $user_id]);
+   
+   if($check_order->rowCount() > 0){
+      $order = $check_order->fetch(PDO::FETCH_ASSOC);
+      $current_status = $order['status'];
+      
+      // Define which statuses can be cancelled
+      $cancellable_statuses = ['pending', 'confirmed'];
+      
+      if(in_array($current_status, $cancellable_statuses)){
+         // Update order status to cancelled
+         $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_reason = ?, cancelled_at = NOW() WHERE id = ? AND user_id = ?");
+         $update_order->execute([$cancel_reason, $order_id, $user_id]);
+         $message[] = 'Order has been cancelled successfully!';
+      }else{
+         $message[] = 'This order cannot be cancelled as it has already been ' . $current_status . '. Please contact support.';
+      }
+   }else{
+      $message[] = 'Order not found!';
+   }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -249,6 +278,16 @@ if(isset($_POST['confirm_receipt'])){
          background: #ffc107;
          color: white;
       }
+
+      .btn-cancel {
+         border-color: #e74c3c;
+         color: #e74c3c;
+      }
+
+      .btn-cancel:hover {
+         background: #e74c3c;
+         color: white;
+      }
       
       .empty-orders {
          text-align: center;
@@ -377,6 +416,48 @@ if(isset($_POST['confirm_receipt'])){
          color: #e74c3c;
          margin-top: 5px;
       }
+
+      /* Cancel Modal Styles */
+      .modal {
+         display: none;
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background: rgba(0,0,0,0.5);
+         z-index: 1000;
+         align-items: center;
+         justify-content: center;
+      }
+
+      .modal-content {
+         background: white;
+         padding: 30px;
+         border-radius: 12px;
+         max-width: 500px;
+         width: 90%;
+         box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+         animation: modalSlideIn 0.3s ease;
+      }
+
+      @keyframes modalSlideIn {
+         from {
+            opacity: 0;
+            transform: translateY(-50px);
+         }
+         to {
+            opacity: 1;
+            transform: translateY(0);
+         }
+      }
+
+      .modal-actions {
+         display: flex;
+         gap: 10px;
+         justify-content: flex-end;
+         margin-top: 20px;
+      }
    </style>
 
 </head>
@@ -449,8 +530,6 @@ if(isset($_POST['confirm_receipt'])){
                   $image_path = 'uploaded_img/' . $product_image;
                   $image_exists = !empty($product_image) && file_exists($image_path);
          ?>
-
-
 
          <!--To Fix Image Display Issue-->
          <div class="product-item">
@@ -571,6 +650,12 @@ if(isset($_POST['confirm_receipt'])){
             </form>
             <?php endif; ?>
             
+            <?php if(in_array($fetch_orders['status'] ?? '', ['pending', 'confirmed'])): ?>
+            <button type="button" class="action-btn btn-cancel" onclick="openCancelModal(<?= $fetch_orders['id']; ?>)">
+               <i class="fas fa-times-circle"></i> Cancel Order
+            </button>
+            <?php endif; ?>
+            
             <a href="contact.php" class="action-btn btn-contact">
                <i class="fas fa-comment"></i> Contact Seller
             </a>
@@ -595,6 +680,33 @@ if(isset($_POST['confirm_receipt'])){
    </div>
 
 </section>
+
+<!-- Cancel Order Modal -->
+<div id="cancelModal" class="modal">
+   <div class="modal-content">
+      <h3 style="margin-bottom: 20px; color: #333;">Cancel Order</h3>
+      <form id="cancelForm" method="post">
+         <input type="hidden" name="order_id" id="cancel_order_id">
+         
+         <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #555;">Reason for cancellation (optional):</label>
+            <textarea name="cancel_reason" id="cancel_reason" class="review-textarea" placeholder="Please let us know why you're cancelling this order..." maxlength="500"></textarea>
+            <div style="text-align: right; font-size: 12px; color: #666; margin-top: 5px;">
+               <span id="charCount">0</span>/500 characters
+            </div>
+         </div>
+         
+         <div class="modal-actions">
+            <button type="button" id="cancelCancel" class="action-btn btn-contact" style="flex: none;">
+               <i class="fas fa-times"></i> Keep Order
+            </button>
+            <button type="submit" name="cancel_order" class="action-btn btn-cancel" style="flex: none;">
+               <i class="fas fa-ban"></i> Confirm Cancellation
+            </button>
+         </div>
+      </form>
+   </div>
+</div>
 
 <!-- footer section starts  -->
 <?php include 'components/footer.php'; ?>
@@ -666,7 +778,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Cancel order functionality
+    const modal = document.getElementById('cancelModal');
+    const cancelCancelBtn = document.getElementById('cancelCancel');
+    const cancelReason = document.getElementById('cancel_reason');
+    const charCount = document.getElementById('charCount');
+
+    // Character count for cancel reason
+    cancelReason.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if(e.target === modal) {
+            closeCancelModal();
+        }
+    });
+
+    // Close modal when clicking cancel button
+    cancelCancelBtn.addEventListener('click', closeCancelModal);
+
+    // Add escape key to close modal
+    document.addEventListener('keydown', function(e) {
+        if(e.key === 'Escape' && modal.style.display === 'flex') {
+            closeCancelModal();
+        }
+    });
 });
+
+function openCancelModal(orderId) {
+   const modal = document.getElementById('cancelModal');
+   const orderIdInput = document.getElementById('cancel_order_id');
+   const charCount = document.getElementById('charCount');
+   const cancelReason = document.getElementById('cancel_reason');
+   
+   orderIdInput.value = orderId;
+   cancelReason.value = '';
+   charCount.textContent = '0';
+   modal.style.display = 'flex';
+}
+
+function closeCancelModal() {
+   const modal = document.getElementById('cancelModal');
+   modal.style.display = 'none';
+}
 </script>
 
 </body>
