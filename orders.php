@@ -23,9 +23,23 @@ if(isset($_POST['submit_rating'])){
    if($check_rating->rowCount() > 0){
       $message[] = 'You have already rated this order!';
    }else{
-      $insert_rating = $conn->prepare("INSERT INTO `order_ratings` (order_id, user_id, rating, review, created_at) VALUES (?, ?, ?, ?, NOW())");
-      $insert_rating->execute([$order_id, $user_id, $rating, $review]);
-      $message[] = 'Thank you for your rating!';
+      // Get products from this order to associate ratings with products
+      $get_order_products = $conn->prepare("SELECT DISTINCT product_id FROM `order_details` WHERE order_id = ?");
+      $get_order_products->execute([$order_id]);
+      
+      if($get_order_products->rowCount() > 0){
+         // For each product in the order, create a rating entry
+         while($product = $get_order_products->fetch(PDO::FETCH_ASSOC)){
+            $insert_rating = $conn->prepare("INSERT INTO `order_ratings` (order_id, user_id, product_id, rating, review, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+            $insert_rating->execute([$order_id, $user_id, $product['product_id'], $rating, $review]);
+         }
+         $message[] = 'Thank you for your rating!';
+      } else {
+         // Fallback: Insert without product_id if no order_details found
+         $insert_rating = $conn->prepare("INSERT INTO `order_ratings` (order_id, user_id, rating, review, created_at) VALUES (?, ?, ?, ?, NOW())");
+         $insert_rating->execute([$order_id, $user_id, $rating, $review]);
+         $message[] = 'Thank you for your rating!';
+      }
    }
 }
 
