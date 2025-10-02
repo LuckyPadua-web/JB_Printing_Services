@@ -449,6 +449,10 @@ if(isset($_POST['confirm_receipt'])){
                   $image_path = 'uploaded_img/' . $product_image;
                   $image_exists = !empty($product_image) && file_exists($image_path);
          ?>
+
+
+
+         <!--To Fix Image Display Issue-->
          <div class="product-item">
             <div class="product-info-container">
                <!-- Product Image on the Left -->
@@ -478,6 +482,8 @@ if(isset($_POST['confirm_receipt'])){
                </div>
             </div>
          </div>
+
+         
          <?php
                }
             }

@@ -1,5 +1,6 @@
 <?php
 include '../components/connect.php';
+require_once 'email_functions.php';
 session_start();
 
 if (isset($_SESSION['admin_id'])) {
@@ -29,9 +30,44 @@ if (isset($_POST['update_order'])) {
    $order_status = $_POST['order_status'];
    $expected_delivery_date = $_POST['expected_delivery_date'];
    
-   $update_order = $conn->prepare("UPDATE `orders` SET status = ?, expected_delivery_date = ? WHERE id = ?");
-   $update_order->execute([$order_status, $expected_delivery_date, $order_id]);
-   $messages[] = 'Order updated successfully!';
+   // Get current order details for email
+   $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
+   $get_order->execute([$order_id]);
+   $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
+   
+   if ($order_data) {
+      // Update the order
+      $update_order = $conn->prepare("UPDATE `orders` SET status = ?, expected_delivery_date = ? WHERE id = ?");
+      $update_order->execute([$order_status, $expected_delivery_date, $order_id]);
+      
+      // Send email notification to customer
+      $customer_email = $order_data['email'];
+      $customer_name = $order_data['name'];
+      
+      // Prepare order details for email
+      $order_details = "Order ID: #" . $order_id . "\n";
+      $order_details .= "Total Amount: ₱" . number_format($order_data['total_price'], 2) . "\n";
+      $order_details .= "Payment Method: " . $order_data['method'] . "\n";
+      
+      if (!empty($expected_delivery_date)) {
+         $order_details .= "Expected Delivery: " . date('F j, Y', strtotime($expected_delivery_date)) . "\n";
+      }
+      
+      if (!empty($order_data['total_products'])) {
+         $order_details .= "Products: " . $order_data['total_products'];
+      }
+      
+      // Send email notification
+      $email_sent = sendOrderStatusEmail($customer_email, $customer_name, $order_id, $order_status, $order_details);
+      
+      if ($email_sent) {
+         $messages[] = ['text' => 'Order updated successfully and email notification sent to customer!', 'type' => 'success'];
+      } else {
+         $messages[] = ['text' => 'Order updated successfully, but email notification failed to send.', 'type' => 'warning'];
+      }
+   } else {
+      $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
+   }
 }
 
 // Delete order
@@ -341,6 +377,17 @@ if (isset($_GET['delete'])) {
          color: #155724;
       }
 
+      .message.warning {
+         background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+         border-color: #ffc107;
+         color: #856404;
+      }
+
+      .message.warning::before {
+         content: "⚠";
+         color: #ffc107;
+      }
+
       .message.error {
          background: linear-gradient(135deg, #f8d7da, #f5c6cb);
          border-color: #dc3545;
@@ -350,6 +397,27 @@ if (isset($_GET['delete'])) {
       .message.error::before {
          content: "⚠";
          color: #dc3545;
+      }
+
+      /* Email notification status */
+      .email-status {
+         font-size: 1.2rem;
+         padding: 0.3rem 0.8rem;
+         border-radius: 12px;
+         display: inline-block;
+         margin-left: 0.5rem;
+      }
+
+      .email-sent {
+         background: #d4edda;
+         color: #155724;
+         border: 1px solid #c3e6cb;
+      }
+
+      .email-failed {
+         background: #f8d7da;
+         color: #721c24;
+         border: 1px solid #f5c6cb;
       }
    </style>
 </head>
@@ -363,7 +431,9 @@ if (isset($_GET['delete'])) {
    <?php
    if(!empty($messages)){
       foreach($messages as $message){
-         echo '<div class="message success auto-hide">'.$message.'</div>';
+         $message_text = is_array($message) ? $message['text'] : $message;
+         $message_type = is_array($message) ? $message['type'] : 'success';
+         echo '<div class="message '.$message_type.' auto-hide">'.$message_text.'</div>';
       }
    }
    ?>
