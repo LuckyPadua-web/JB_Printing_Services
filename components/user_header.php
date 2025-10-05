@@ -23,7 +23,26 @@ if(isset($message)){
          <a href="orders.php">ORDERS</a>
          <a href="about.php">ABOUT US</a>
          <?php if(isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])): ?>
-         <a href="contact.php">CONTACT</a>
+         <a href="contact.php" style="position: relative;">
+            CONTACT
+            <?php
+            try {
+               $unread_count = $conn->prepare("
+                  SELECT COUNT(*) as count 
+                  FROM conversation_messages cm
+                  JOIN conversations c ON cm.conversation_id = c.id
+                  WHERE c.user_id = ? AND cm.sender_type = 'admin' AND cm.is_read = 0
+               ");
+               $unread_count->execute([$user_id]);
+               $unread = $unread_count->fetch(PDO::FETCH_ASSOC);
+               if($unread['count'] > 0) {
+                  echo '<span style="position: absolute; top: -5px; right: -10px; background: #ff4757; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold;">' . $unread['count'] . '</span>';
+               }
+            } catch(Exception $e) {
+               // Table might not exist yet, ignore error
+            }
+            ?>
+         </a>
          <?php endif; ?>
       </nav>
 

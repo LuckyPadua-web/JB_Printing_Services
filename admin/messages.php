@@ -11,12 +11,6 @@ if(isset($_SESSION['admin_id'])){
    header('location:admin_login.php');
 };
 
-if(isset($_GET['delete'])){
-   $delete_id = $_GET['delete'];
-   $delete_message = $conn->prepare("DELETE FROM `messages` WHERE id = ?");
-   $delete_message->execute([$delete_id]);
-   header('location:messages.php');
-}
 
 ?>
 
@@ -34,311 +28,7 @@ if(isset($_GET['delete'])){
    <!-- custom css file link  -->
    <link rel="stylesheet" href="../css/admin_style.css">
 
-   <style>
-      .messages {
-         padding: 2rem;
-         max-width: 1200px;
-         margin: 0 auto;
-      }
-
-      .heading {
-         text-align: center;
-         font-size: 2.5rem;
-         margin-bottom: 2rem;
-         color: #333;
-         border-bottom: 2px solid #e0e0e0;
-         padding-bottom: 1rem;
-      }
-
-      .messages-container {
-         background: #fff;
-         border-radius: 8px;
-         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-         overflow: hidden;
-      }
-
-      .message-item {
-         display: flex;
-         align-items: flex-start;
-         padding: 1.5rem;
-         border-bottom: 1px solid #f0f0f0;
-         transition: background-color 0.2s ease;
-         cursor: pointer;
-         position: relative;
-      }
-
-      .message-item:hover {
-         background-color: #f9f9f9;
-      }
-
-      .message-item:last-child {
-         border-bottom: none;
-      }
-
-      .message-item.unread {
-         background-color: #f0f8ff;
-         border-left: 4px solid #4285f4;
-      }
-
-      .message-item.unread:hover {
-         background-color: #e8f4ff;
-      }
-
-      .message-avatar {
-         width: 40px;
-         height: 40px;
-         border-radius: 50%;
-         background: linear-gradient(135deg, #4285f4, #34a853);
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         color: white;
-         font-weight: bold;
-         font-size: 1.4rem;
-         margin-right: 1.5rem;
-         flex-shrink: 0;
-      }
-
-      .message-content {
-         flex: 1;
-         min-width: 0;
-      }
-
-      .message-header {
-         display: flex;
-         align-items: center;
-         justify-content: between;
-         margin-bottom: 0.5rem;
-         gap: 1rem;
-      }
-
-      .message-sender {
-         font-weight: 600;
-         color: #333;
-         font-size: 1.4rem;
-         margin: 0;
-      }
-
-      .message-contact {
-         display: flex;
-         gap: 1.5rem;
-         margin-bottom: 0.5rem;
-         flex-wrap: wrap;
-      }
-
-      .contact-info {
-         display: flex;
-         align-items: center;
-         gap: 0.5rem;
-         color: #666;
-         font-size: 1.2rem;
-      }
-
-      .contact-info i {
-         color: #4285f4;
-         width: 16px;
-      }
-
-      .message-preview {
-         color: #666;
-         font-size: 1.3rem;
-         line-height: 1.4;
-         margin: 0;
-         display: -webkit-box;
-         -webkit-line-clamp: 2;
-         -webkit-box-orient: vertical;
-         overflow: hidden;
-      }
-
-      .message-time {
-         color: #999;
-         font-size: 1.2rem;
-         white-space: nowrap;
-         margin-left: auto;
-         padding-left: 1rem;
-      }
-
-      .message-actions {
-         display: flex;
-         gap: 0.5rem;
-         margin-left: 1rem;
-         opacity: 0;
-         transition: opacity 0.2s ease;
-      }
-
-      .message-item:hover .message-actions {
-         opacity: 1;
-      }
-
-      .action-btn {
-         padding: 0.5rem;
-         border: none;
-         background: none;
-         cursor: pointer;
-         border-radius: 4px;
-         transition: background-color 0.2s ease;
-         color: #666;
-      }
-
-      .action-btn:hover {
-         background-color: #f0f0f0;
-      }
-
-      .delete-btn {
-         color: #d93025;
-      }
-
-      .delete-btn:hover {
-         background-color: #fce8e6;
-      }
-
-      .view-btn {
-         color: #4285f4;
-      }
-
-      .view-btn:hover {
-         background-color: #e8f0fe;
-      }
-
-      /* Modal styles */
-      .modal {
-         display: none;
-         position: fixed;
-         z-index: 1000;
-         left: 0;
-         top: 0;
-         width: 100%;
-         height: 100%;
-         background-color: rgba(0,0,0,0.5);
-      }
-
-      .modal-content {
-         background-color: #fff;
-         margin: 5% auto;
-         padding: 0;
-         border-radius: 8px;
-         width: 90%;
-         max-width: 600px;
-         box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-         animation: modalSlideIn 0.3s ease;
-      }
-
-      @keyframes modalSlideIn {
-         from {
-            opacity: 0;
-            transform: translateY(-50px);
-         }
-         to {
-            opacity: 1;
-            transform: translateY(0);
-         }
-      }
-
-      .modal-header {
-         padding: 2rem 2rem 1rem;
-         border-bottom: 1px solid #e0e0e0;
-      }
-
-      .modal-title {
-         margin: 0;
-         font-size: 1.8rem;
-         color: #333;
-      }
-
-      .modal-sender {
-         color: #666;
-         font-size: 1.3rem;
-         margin-top: 0.5rem;
-      }
-
-      .modal-body {
-         padding: 2rem;
-      }
-
-      .modal-message {
-         font-size: 1.4rem;
-         line-height: 1.6;
-         color: #333;
-         white-space: pre-wrap;
-      }
-
-      .modal-footer {
-         padding: 1rem 2rem;
-         border-top: 1px solid #e0e0e0;
-         display: flex;
-         justify-content: flex-end;
-         gap: 1rem;
-      }
-
-      .close-modal {
-         background: #4285f4;
-         color: white;
-         border: none;
-         padding: 0.8rem 1.5rem;
-         border-radius: 4px;
-         cursor: pointer;
-         font-size: 1.3rem;
-      }
-
-      .close-modal:hover {
-         background: #3367d6;
-      }
-
-      .empty-state {
-         text-align: center;
-         padding: 4rem 2rem;
-         color: #666;
-      }
-
-      .empty-state i {
-         font-size: 4rem;
-         color: #ddd;
-         margin-bottom: 1rem;
-      }
-
-      .empty-state h3 {
-         font-size: 1.8rem;
-         margin-bottom: 1rem;
-         color: #333;
-      }
-
-      .empty-state p {
-         font-size: 1.4rem;
-         margin: 0;
-      }
-
-      .messages-stats {
-         display: flex;
-         justify-content: space-between;
-         align-items: center;
-         margin-bottom: 1.5rem;
-         padding: 1rem;
-         background: #f8f9fa;
-         border-radius: 6px;
-      }
-
-      .total-messages {
-         font-size: 1.4rem;
-         color: #666;
-      }
-
-      .refresh-btn {
-         background: #4285f4;
-         color: white;
-         border: none;
-         padding: 0.6rem 1.2rem;
-         border-radius: 4px;
-         cursor: pointer;
-         font-size: 1.3rem;
-         display: flex;
-         align-items: center;
-         gap: 0.5rem;
-      }
-
-      .refresh-btn:hover {
-         background: #3367d6;
-      }
-   </style>
+   
 </head>
 <body>
 
@@ -347,224 +37,626 @@ if(isset($_GET['delete'])){
 <!-- messages section starts  -->
 
 <section class="messages">
-
    <h1 class="heading">Messages</h1>
-
-   <div class="messages-container">
-      <?php
-         // First, let's check what columns exist in the messages table
-         try {
-            $check_columns = $conn->prepare("SHOW COLUMNS FROM `messages`");
-            $check_columns->execute();
-            $columns = $check_columns->fetchAll(PDO::FETCH_COLUMN);
-            
-            // Use the appropriate timestamp column
-            $timestamp_column = 'date'; // Default fallback
-            if (in_array('created_at', $columns)) {
-               $timestamp_column = 'created_at';
-            } elseif (in_array('timestamp', $columns)) {
-               $timestamp_column = 'timestamp';
-            } elseif (in_array('date', $columns)) {
-               $timestamp_column = 'date';
-            }
-            
-            // Build the query with the correct timestamp column
-            $select_messages = $conn->prepare("SELECT * FROM `messages` ORDER BY id DESC");
-            $select_messages->execute();
-            $total_messages = $select_messages->rowCount();
-            
-         } catch (PDOException $e) {
-            // If there's an error, use a simple query without ordering
-            $select_messages = $conn->prepare("SELECT * FROM `messages`");
-            $select_messages->execute();
-            $total_messages = $select_messages->rowCount();
-         }
-         
-         if($total_messages > 0){
-      ?>
+   
+   <div class="chat-container">
+      <div class="conversations-list">
+         <div class="search-box">
+            <input type="text" id="searchConversations" placeholder="Search conversations...">
+            <i class="fas fa-search"></i>
+         </div>
+         <div id="conversationsList" class="conversations">
+            <!-- Conversations will be loaded here -->
+         </div>
+      </div>
       
-      <div class="messages-stats">
-         <div class="total-messages">
-            <strong><?= $total_messages ?></strong> message<?= $total_messages > 1 ? 's' : '' ?> total
-         </div>
-         <button class="refresh-btn" onclick="window.location.reload()">
-            <i class="fas fa-sync-alt"></i> Refresh
-         </button>
-      </div>
-
-      <?php
-            while($fetch_messages = $select_messages->fetch(PDO::FETCH_ASSOC)){
-               $sender_name = $fetch_messages['name'];
-               $initials = getInitials($sender_name);
-               $message_preview = strlen($fetch_messages['message']) > 120 
-                  ? substr($fetch_messages['message'], 0, 120) . '...' 
-                  : $fetch_messages['message'];
-               
-               // Get timestamp - try different possible column names
-               $timestamp = '';
-               if (isset($fetch_messages['created_at'])) {
-                  $timestamp = $fetch_messages['created_at'];
-               } elseif (isset($fetch_messages['timestamp'])) {
-                  $timestamp = $fetch_messages['timestamp'];
-               } elseif (isset($fetch_messages['date'])) {
-                  $timestamp = $fetch_messages['date'];
-               } else {
-                  $timestamp = 'Recent';
-               }
-               
-               $time_ago = timeAgo($timestamp);
-      ?>
-      <div class="message-item" onclick="viewMessage(<?= htmlspecialchars(json_encode($fetch_messages)) ?>)">
-         <div class="message-avatar">
-            <?= $initials ?>
-         </div>
-         <div class="message-content">
-            <div class="message-header">
-               <h3 class="message-sender"><?= htmlspecialchars($sender_name) ?></h3>
-               <div class="message-contact">
-                  <div class="contact-info">
-                     <i class="fas fa-phone"></i>
-                     <span><?= htmlspecialchars($fetch_messages['number']) ?></span>
-                  </div>
-                  <div class="contact-info">
-                     <i class="fas fa-envelope"></i>
-                     <span><?= htmlspecialchars($fetch_messages['email']) ?></span>
-                  </div>
+      <div class="chat-area">
+         <div class="chat-header" id="chatHeader" style="display: none;">
+            <div class="user-info">
+               <div class="avatar">
+                  <i class="fas fa-user"></i>
                </div>
-               <div class="message-time"><?= $time_ago ?></div>
+               <div class="user-details">
+                  <h3 id="userName">Select a conversation</h3>
+                  <p id="userEmail"></p>
+               </div>
             </div>
-            <p class="message-preview"><?= htmlspecialchars($message_preview) ?></p>
          </div>
-         <div class="message-actions">
-            <button class="action-btn view-btn" onclick="event.stopPropagation(); viewMessage(<?= htmlspecialchars(json_encode($fetch_messages)) ?>)">
-               <i class="fas fa-eye"></i>
-            </button>
-            <a href="messages.php?delete=<?= $fetch_messages['id']; ?>" class="action-btn delete-btn" onclick="event.stopPropagation(); return confirm('Delete this message?');">
-               <i class="fas fa-trash"></i>
-            </a>
+         
+         <div class="chat-messages" id="chatMessages">
+            <div class="no-chat-selected">
+               <i class="fas fa-comments"></i>
+               <p>Select a conversation to start messaging</p>
+            </div>
+         </div>
+         
+         <div class="chat-input" id="chatInput" style="display: none;">
+            <form id="messageForm">
+               <input type="hidden" id="conversationId" value="">
+               <div class="input-group">
+                  <textarea id="messageText" placeholder="Type your message..." rows="1"></textarea>
+                  <button type="submit"><i class="fas fa-paper-plane"></i></button>
+               </div>
+            </form>
          </div>
       </div>
-      <?php
-            }
-         }else{
-      ?>
-      <div class="empty-state">
-         <i class="fas fa-inbox"></i>
-         <h3>No messages yet</h3>
-         <p>When customers contact you, their messages will appear here.</p>
-      </div>
-      <?php
-         }
-
-         // Helper functions
-         function getInitials($name) {
-            $names = explode(' ', $name);
-            $initials = '';
-            foreach($names as $n) {
-               if (!empty(trim($n))) {
-                  $initials .= strtoupper($n[0]);
-               }
-            }
-            return substr($initials, 0, 2);
-         }
-
-         function timeAgo($datetime) {
-            if (empty($datetime) || $datetime == 'Recent') {
-               return 'Recent';
-            }
-            
-            try {
-               $time = strtotime($datetime);
-               if ($time === false) {
-                  return 'Recent';
-               }
-               
-               $time_diff = time() - $time;
-               
-               if ($time_diff < 60) {
-                  return 'just now';
-               } elseif ($time_diff < 3600) {
-                  $mins = floor($time_diff / 60);
-                  return $mins . ' min' . ($mins > 1 ? 's' : '') . ' ago';
-               } elseif ($time_diff < 86400) {
-                  $hours = floor($time_diff / 3600);
-                  return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
-               } else {
-                  return date('M j, Y', $time);
-               }
-            } catch (Exception $e) {
-               return 'Recent';
-            }
-         }
-      ?>
    </div>
-
 </section>
 
-<!-- Message View Modal -->
-<div id="messageModal" class="modal">
-   <div class="modal-content">
-      <div class="modal-header">
-         <h3 class="modal-title" id="modalMessageName"></h3>
-         <div class="modal-sender">
-            <div><strong>Phone:</strong> <span id="modalMessageNumber"></span></div>
-            <div><strong>Email:</strong> <span id="modalMessageEmail"></span></div>
-            <div><strong>Sent:</strong> <span id="modalMessageTime"></span></div>
-         </div>
-      </div>
-      <div class="modal-body">
-         <div class="modal-message" id="modalMessageContent"></div>
-      </div>
-      <div class="modal-footer">
-         <button class="close-modal" onclick="closeModal()">Close</button>
-      </div>
-   </div>
-</div>
+<style>
+.chat-container {
+   display: flex;
+   height: 600px;
+   border: 1px solid #ddd;
+   border-radius: 10px;
+   overflow: hidden;
+   background: white;
+   margin: 2rem 0;
+}
+
+.conversations-list {
+   width: 350px;
+   border-right: 1px solid #ddd;
+   background: #f8f9fa;
+}
+
+.search-box {
+   padding: 1rem;
+   border-bottom: 1px solid #ddd;
+   position: relative;
+}
+
+.search-box input {
+   width: 100%;
+   padding: 0.8rem 2.5rem 0.8rem 1rem;
+   border: 1px solid #ddd;
+   border-radius: 25px;
+   outline: none;
+}
+
+.search-box i {
+   position: absolute;
+   right: 1.5rem;
+   top: 50%;
+   transform: translateY(-50%);
+   color: #666;
+}
+
+.conversations {
+   height: calc(100% - 80px);
+   overflow-y: auto;
+}
+
+.conversation-item {
+   padding: 1rem;
+   border-bottom: 1px solid #eee;
+   cursor: pointer;
+   transition: background 0.3s;
+   display: flex;
+   align-items: center;
+   gap: 1rem;
+}
+
+.conversation-item:hover {
+   background: #e9ecef;
+}
+
+.conversation-item.active {
+   background: #007bff;
+   color: white;
+}
+
+.conversation-item .avatar {
+   width: 45px;
+   height: 45px;
+   border-radius: 50%;
+   background: #007bff;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   color: white;
+   font-size: 1.2rem;
+}
+
+.conversation-item.active .avatar {
+   background: white;
+   color: #007bff;
+}
+
+.conversation-details h4 {
+   margin: 0 0 0.3rem 0;
+   font-size: 1rem;
+}
+
+.conversation-details p {
+   margin: 0;
+   font-size: 0.85rem;
+   opacity: 0.7;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   max-width: 200px;
+}
+
+.conversation-time {
+   font-size: 0.75rem;
+   opacity: 0.6;
+   margin-left: auto;
+}
+
+.unread-count {
+   background: #dc3545;
+   color: white;
+   border-radius: 50%;
+   width: 20px;
+   height: 20px;
+   font-size: 0.7rem;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   margin-left: 0.5rem;
+}
+
+.chat-area {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+}
+
+.chat-header {
+   padding: 1rem;
+   border-bottom: 1px solid #ddd;
+   background: #f8f9fa;
+   display: flex;
+   align-items: center;
+   gap: 1rem;
+}
+
+.chat-header .avatar {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   background: #007bff;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   color: white;
+}
+
+.user-details h3 {
+   margin: 0 0 0.2rem 0;
+   font-size: 1.1rem;
+}
+
+.user-details p {
+   margin: 0;
+   font-size: 0.9rem;
+   color: #666;
+}
+
+.chat-messages {
+   flex: 1;
+   padding: 1rem;
+   overflow-y: auto;
+   background: #f8f9fa;
+}
+
+.no-chat-selected {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   height: 100%;
+   color: #666;
+   text-align: center;
+}
+
+.no-chat-selected i {
+   font-size: 3rem;
+   margin-bottom: 1rem;
+   opacity: 0.5;
+}
+
+.message {
+   margin-bottom: 1rem;
+   display: flex;
+   align-items: flex-end;
+   gap: 0.5rem;
+}
+
+.message.sent {
+   flex-direction: row-reverse;
+}
+
+.message-content {
+   background: white;
+   padding: 0.8rem 1rem;
+   border-radius: 18px;
+   max-width: 70%;
+   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message.sent .message-content {
+   background: #007bff;
+   color: white;
+}
+
+.message-time {
+   font-size: 0.7rem;
+   color: #666;
+   margin-top: 0.3rem;
+}
+
+.message.sent .message-time {
+   color: rgba(255,255,255,0.8);
+}
+
+.chat-input {
+   padding: 1rem;
+   border-top: 1px solid #ddd;
+   background: white;
+}
+
+.input-group {
+   display: flex;
+   gap: 0.5rem;
+   align-items: flex-end;
+}
+
+.input-group textarea {
+   flex: 1;
+   border: 1px solid #ddd;
+   border-radius: 20px;
+   padding: 0.8rem 1rem;
+   resize: none;
+   outline: none;
+   font-family: inherit;
+   max-height: 100px;
+}
+
+.input-group button {
+   background: #007bff;
+   border: none;
+   border-radius: 50%;
+   width: 40px;
+   height: 40px;
+   color: white;
+   cursor: pointer;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   transition: background 0.3s;
+}
+
+.input-group button:hover {
+   background: #0056b3;
+}
+
+.input-group button:disabled {
+   background: #ccc;
+   cursor: not-allowed;
+}
+</style>
 
 <!-- custom js file link  -->
 <script src="../js/admin_script.js"></script>
 
 <script>
-// Modal functionality
-const modal = document.getElementById('messageModal');
+let currentConversationId = null;
+let lastMessageId = 0;
+let messagePolling = null;
 
-function viewMessage(message) {
-   document.getElementById('modalMessageName').textContent = message.name;
-   document.getElementById('modalMessageNumber').textContent = message.number;
-   document.getElementById('modalMessageEmail').textContent = message.email;
-   
-   // Format the timestamp for display
-   let displayTime = 'Recent';
-   if (message.created_at) {
-      displayTime = new Date(message.created_at).toLocaleString();
-   } else if (message.timestamp) {
-      displayTime = new Date(message.timestamp).toLocaleString();
-   } else if (message.date) {
-      displayTime = new Date(message.date).toLocaleString();
-   }
-   document.getElementById('modalMessageTime').textContent = displayTime;
-   
-   document.getElementById('modalMessageContent').textContent = message.message;
-   
-   modal.style.display = 'block';
+// Helper function for time formatting - moved to top to avoid reference errors
+function formatTimeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + 'm';
+    if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + 'h';
+    if (diffInSeconds < 604800) return Math.floor(diffInSeconds / 86400) + 'd';
+    
+    return date.toLocaleDateString();
 }
 
-function closeModal() {
-   modal.style.display = 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    loadConversations();
+    
+    // Auto-resize textarea
+    document.getElementById('messageText').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+    
+    // Send message on form submit
+    document.getElementById('messageForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    
+    // Send message on Enter (Shift+Enter for new line)
+    document.getElementById('messageText').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // Search conversations
+    document.getElementById('searchConversations').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const conversations = document.querySelectorAll('.conversation-item');
+        conversations.forEach(conv => {
+            const name = conv.querySelector('h4').textContent.toLowerCase();
+            const email = conv.querySelector('p').textContent.toLowerCase();
+            if (name.includes(searchTerm) || email.includes(searchTerm)) {
+                conv.style.display = 'flex';
+            } else {
+                conv.style.display = 'none';
+            }
+        });
+    });
+});
+
+function loadConversations() {
+    const adminId = '<?= $admin_id ?>';
+    if (!adminId) {
+        console.error('Admin ID not found');
+        return;
+    }
+    
+    console.log('Loading conversations for admin ID:', adminId);
+    
+    fetch(`../components/messaging_api.php?action=get_conversations&user_type=admin&user_id=${adminId}`)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Response:', data);
+            if (data.success) {
+                displayConversations(data.conversations);
+            } else {
+                console.error('API Error:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch Error:', error);
+        });
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-   if (event.target == modal) {
-      closeModal();
-   }
+function displayConversations(conversations) {
+    const container = document.getElementById('conversationsList');
+    container.innerHTML = '';
+    
+    if (conversations.length === 0) {
+        container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">No conversations yet</div>';
+        return;
+    }
+    
+    conversations.forEach(conv => {
+        const timeAgoText = conv.last_message_time ? formatTimeAgo(conv.last_message_time) : '';
+        const unreadBadge = conv.unread_count > 0 ? `<span class="unread-count">${conv.unread_count}</span>` : '';
+        
+        const convElement = document.createElement('div');
+        convElement.className = 'conversation-item';
+        convElement.dataset.conversationId = conv.id;
+        convElement.dataset.userName = conv.user_name;
+        convElement.dataset.userEmail = conv.user_email;
+        
+        convElement.innerHTML = `
+            <div class="avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="conversation-details">
+                <h4>${conv.user_name}</h4>
+                <p>${conv.last_message || 'No messages yet'}</p>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <span class="conversation-time">${timeAgoText}</span>
+                ${unreadBadge}
+            </div>
+        `;
+        
+        convElement.addEventListener('click', () => selectConversation(conv.id, conv.user_name, conv.user_email));
+        container.appendChild(convElement);
+    });
 }
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(event) {
-   if (event.key === 'Escape') {
-      closeModal();
-   }
+function selectConversation(conversationId, userName, userEmail) {
+    currentConversationId = conversationId;
+    lastMessageId = 0; // Reset to load all messages
+    
+    // Update active conversation
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`[data-conversation-id="${conversationId}"]`).classList.add('active');
+    
+    // Show chat header and input
+    document.getElementById('chatHeader').style.display = 'flex';
+    document.getElementById('chatInput').style.display = 'block';
+    
+    // Update header info
+    document.getElementById('userName').textContent = userName;
+    document.getElementById('userEmail').textContent = userEmail;
+    document.getElementById('conversationId').value = conversationId;
+    
+    // Clear previous messages
+    document.getElementById('chatMessages').innerHTML = '';
+    
+    // Load all messages for this conversation
+    loadAllMessages();
+    
+    // Mark messages as read
+    markMessagesAsRead('user');
+    
+    // Start polling for new messages
+    if (messagePolling) clearInterval(messagePolling);
+    messagePolling = setInterval(loadMessages, 2000);
+}
+
+function loadAllMessages() {
+    if (!currentConversationId) {
+        console.log('No conversation selected for loading all messages');
+        return;
+    }
+    
+    console.log('Loading ALL messages for conversation:', currentConversationId);
+    
+    fetch(`../components/messaging_api.php?action=get_messages&conversation_id=${currentConversationId}&last_message_id=0`)
+        .then(response => {
+            console.log('All messages response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('All messages API Response:', data);
+            if (data.success) {
+                if (data.messages.length > 0) {
+                    displayMessages(data.messages);
+                    // Update last message ID
+                    lastMessageId = Math.max(...data.messages.map(m => m.id));
+                    console.log('Updated lastMessageId to:', lastMessageId);
+                } else {
+                    console.log('No messages found for this conversation');
+                    document.getElementById('chatMessages').innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No messages yet. Start the conversation!</div>';
+                }
+            } else {
+                console.error('All messages API Error:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('All messages Fetch Error:', error);
+        });
+}
+
+function loadMessages() {
+    if (!currentConversationId) {
+        console.log('No conversation selected');
+        return;
+    }
+    
+    console.log('Loading messages for conversation:', currentConversationId, 'after message ID:', lastMessageId);
+    
+    fetch(`../components/messaging_api.php?action=get_messages&conversation_id=${currentConversationId}&last_message_id=${lastMessageId}`)
+        .then(response => {
+            console.log('Messages response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Messages API Response:', data);
+            if (data.success) {
+                if (data.messages.length > 0) {
+                    displayMessages(data.messages);
+                    // Update last message ID
+                    lastMessageId = Math.max(...data.messages.map(m => m.id));
+                } else {
+                    console.log('No new messages');
+                }
+            } else {
+                console.error('Messages API Error:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Messages Fetch Error:', error);
+        });
+}
+
+function displayMessages(messages) {
+    const container = document.getElementById('chatMessages');
+    
+    console.log('Displaying messages:', messages);
+    
+    // Clear "no chat selected" or "no messages" text if present
+    const existingMessage = container.querySelector('.no-chat-selected, div[style*="text-align: center"]');
+    if (existingMessage) {
+        container.innerHTML = '';
+    }
+    
+    if (!messages || messages.length === 0) {
+        console.log('No messages to display');
+        return;
+    }
+    
+    messages.forEach(message => {
+        // Check if message already exists to prevent duplicates
+        const existingMsg = container.querySelector(`[data-message-id="${message.id}"]`);
+        if (existingMsg) {
+            console.log('Message already exists, skipping:', message.id);
+            return;
+        }
+        
+        console.log('Adding new message:', message);
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${message.sender_type === 'admin' ? 'sent' : 'received'}`;
+        messageElement.dataset.messageId = message.id; // Add message ID for tracking
+        
+        const time = new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        messageElement.innerHTML = `
+            <div class="message-content">
+                ${message.message.replace(/\n/g, '<br>')}
+                <div class="message-time">${time}</div>
+            </div>
+        `;
+        
+        container.appendChild(messageElement);
+    });
+    
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+    const messageText = document.getElementById('messageText').value.trim();
+    const adminId = '<?= $admin_id ?>';
+    
+    if (!messageText || !currentConversationId || !adminId) {
+        console.error('Missing required data for sending message');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'send_message');
+    formData.append('conversation_id', currentConversationId);
+    formData.append('message', messageText);
+    formData.append('sender_type', 'admin');
+    formData.append('sender_id', adminId);
+    
+    fetch('../components/messaging_api.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('messageText').value = '';
+            document.getElementById('messageText').style.height = 'auto';
+            loadMessages();
+            loadConversations(); // Refresh conversations list
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function markMessagesAsRead(senderType) {
+    if (!currentConversationId) return;
+    
+    const formData = new FormData();
+    formData.append('action', 'mark_read');
+    formData.append('conversation_id', currentConversationId);
+    formData.append('sender_type', senderType);
+    
+    fetch('../components/messaging_api.php', {
+        method: 'POST',
+        body: formData
+    });
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (messagePolling) clearInterval(messagePolling);
 });
 </script>
 

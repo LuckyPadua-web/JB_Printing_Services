@@ -23,7 +23,25 @@ if(isset($message)){
          <a href="placed_orders.php">ORDERS</a>
          <a href="report.php">REPORTS</a>
          <a href="users_accounts.php">USERS</a>
-         <a href="messages.php">MESSAGES</a>
+         <a href="messages.php" style="position: relative;">
+            MESSAGES
+            <?php
+            try {
+               $unread_count = $conn->prepare("
+                  SELECT COUNT(*) as count 
+                  FROM conversation_messages 
+                  WHERE sender_type = 'user' AND is_read = 0
+               ");
+               $unread_count->execute();
+               $unread = $unread_count->fetch(PDO::FETCH_ASSOC);
+               if($unread['count'] > 0) {
+                  echo '<span style="position: absolute; top: -5px; right: -10px; background: #ff4757; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold;">' . $unread['count'] . '</span>';
+               }
+            } catch(Exception $e) {
+               // Table might not exist yet, ignore error
+            }
+            ?>
+         </a>
          
       </nav>
 
