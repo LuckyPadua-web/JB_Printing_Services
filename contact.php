@@ -672,19 +672,36 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeChat() {
+    console.log('Initializing chat for user ID: <?= $user_id ?>');
+    
     // Check for existing conversation or create one
-    fetch('components/messaging_api.php?action=get_conversations&user_type=user&user_id=<?= $user_id ?>')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.conversations.length > 0) {
-                // Load existing conversation
-                currentConversationId = data.conversations[0].id;
-                document.getElementById('conversationId').value = currentConversationId;
-                loadMessages();
-                startPolling();
-            } else {
-                // Create new conversation
-                createConversation();
+    const url = 'components/messaging_api.php?action=get_conversations&user_type=user&user_id=<?= $user_id ?>';
+    console.log('API URL:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.text(); // Get text first to debug
+        })
+        .then(text => {
+            console.log('Raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed response:', data);
+                if (data.success && data.conversations.length > 0) {
+                    // Load existing conversation
+                    currentConversationId = data.conversations[0].id;
+                    document.getElementById('conversationId').value = currentConversationId;
+                    loadMessages();
+                    startPolling();
+                } else {
+                    // Create new conversation
+                    createConversation();
+                }
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Response was not valid JSON:', text);
+                createConversation(); // Try to create conversation anyway
             }
         })
         .catch(error => {
@@ -694,6 +711,8 @@ function initializeChat() {
 }
 
 function createConversation() {
+    console.log('Creating conversation for user ID: <?= $user_id ?>');
+    
     const formData = new FormData();
     formData.append('action', 'create_conversation');
     formData.append('user_id', '<?= $user_id ?>');
@@ -703,40 +722,91 @@ function createConversation() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            currentConversationId = data.conversation_id;
-            document.getElementById('conversationId').value = currentConversationId;
-            
-            if (!data.existing) {
-                // Send welcome message if new conversation
-                setTimeout(() => {
-                    const welcomeMsg = "Hello! Welcome to JB Printing Services. How can we help you today?";
-                    displayWelcomeMessage(welcomeMsg);
-                }, 500);
+    .then(response => {
+        console.log('Create conversation response status:', response.status);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Create conversation raw response:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Create conversation parsed response:', data);
+            if (data.success) {
+                currentConversationId = data.conversation_id;
+                document.getElementById('conversationId').value = currentConversationId;
+                
+                if (!data.existing) {
+                    // Send welcome message if new conversation
+                    setTimeout(() => {
+                        const welcomeMsg = "Hello! Welcome to JB Printing Services. How can we help you today?";
+                        displayWelcomeMessage(welcomeMsg);
+                    }, 500);
+                } else {
+                    loadMessages();
+                }
+                startPolling();
             } else {
-                loadMessages();
+                console.error('Create conversation API error:', data.error);
+                displayErrorMessage('Failed to create conversation: ' + (data.error || 'Unknown error'));
             }
-            startPolling();
+        } catch (parseError) {
+            console.error('Create conversation JSON parse error:', parseError);
+            console.error('Response was not valid JSON:', text);
+            displayErrorMessage('Server error: Invalid response format');
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Create conversation fetch error:', error);
+        displayErrorMessage('Network error: ' + error.message);
+    });
+}
+
+function displayErrorMessage(message) {
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: #dc3545;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <p>${message}</p>
+            <button onclick="initializeChat()" style="background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer;">
+                Try Again
+            </button>
+        </div>
+    `;
 }
 
 function loadMessages() {
     if (!currentConversationId) return;
     
-    fetch(`components/messaging_api.php?action=get_messages&conversation_id=${currentConversationId}&last_message_id=${lastMessageId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.messages.length > 0) {
-                displayMessages(data.messages);
-                lastMessageId = Math.max(...data.messages.map(m => m.id));
-                markMessagesAsRead('admin');
+    console.log('Loading messages for conversation:', currentConversationId, 'after message ID:', lastMessageId);
+    
+    const url = `components/messaging_api.php?action=get_messages&conversation_id=${currentConversationId}&last_message_id=${lastMessageId}`;
+    console.log('Messages API URL:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Messages response status:', response.status);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Messages raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Messages parsed response:', data);
+                if (data.success && data.messages.length > 0) {
+                    displayMessages(data.messages);
+                    lastMessageId = Math.max(...data.messages.map(m => m.id));
+                    markMessagesAsRead('admin');
+                } else {
+                    console.log('No new messages or API error:', data.error);
+                }
+            } catch (parseError) {
+                console.error('Messages JSON Parse Error:', parseError);
+                console.error('Messages response was not valid JSON:', text);
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Messages fetch error:', error);
+        });
 }
 
 function displayMessages(messages) {

@@ -361,42 +361,58 @@ function formatTimeAgo(dateString) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin messages page loaded');
     loadConversations();
     
-    // Auto-resize textarea
-    document.getElementById('messageText').addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = this.scrollHeight + 'px';
-    });
+    // Check if elements exist before adding listeners
+    const messageText = document.getElementById('messageText');
+    const messageForm = document.getElementById('messageForm');
+    const searchConversations = document.getElementById('searchConversations');
     
-    // Send message on form submit
-    document.getElementById('messageForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        sendMessage();
-    });
-    
-    // Send message on Enter (Shift+Enter for new line)
-    document.getElementById('messageText').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-    
-    // Search conversations
-    document.getElementById('searchConversations').addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const conversations = document.querySelectorAll('.conversation-item');
-        conversations.forEach(conv => {
-            const name = conv.querySelector('h4').textContent.toLowerCase();
-            const email = conv.querySelector('p').textContent.toLowerCase();
-            if (name.includes(searchTerm) || email.includes(searchTerm)) {
-                conv.style.display = 'flex';
-            } else {
-                conv.style.display = 'none';
+    if (messageText) {
+        // Auto-resize textarea
+        messageText.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        
+        // Send message on Enter (Shift+Enter for new line)
+        messageText.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
         });
-    });
+    }
+    
+    if (messageForm) {
+        // Send message on form submit
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+    }
+    
+    if (searchConversations) {
+        // Search conversations
+        searchConversations.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const conversations = document.querySelectorAll('.conversation-item');
+            conversations.forEach(conv => {
+                const name = conv.querySelector('h4');
+                const email = conv.querySelector('p');
+                if (name && email) {
+                    const nameText = name.textContent.toLowerCase();
+                    const emailText = email.textContent.toLowerCase();
+                    if (nameText.includes(searchTerm) || emailText.includes(searchTerm)) {
+                        conv.style.display = 'flex';
+                    } else {
+                        conv.style.display = 'none';
+                    }
+                }
+            });
+        });
+    }
 });
 
 function loadConversations() {
@@ -408,21 +424,35 @@ function loadConversations() {
     
     console.log('Loading conversations for admin ID:', adminId);
     
-    fetch(`../components/messaging_api.php?action=get_conversations&user_type=admin&user_id=${adminId}`)
+    const url = `../components/messaging_api.php?action=get_conversations&user_type=admin&user_id=${adminId}`;
+    console.log('API URL:', url);
+    
+    fetch(url)
         .then(response => {
             console.log('Response status:', response.status);
-            return response.json();
+            console.log('Response headers:', response.headers);
+            return response.text(); // Get text first to see what we actually receive
         })
-        .then(data => {
-            console.log('API Response:', data);
-            if (data.success) {
-                displayConversations(data.conversations);
-            } else {
-                console.error('API Error:', data.error);
+        .then(text => {
+            console.log('Raw response:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed API Response:', data);
+                if (data.success) {
+                    displayConversations(data.conversations);
+                } else {
+                    console.error('API Error:', data.error);
+                    document.getElementById('conversationsList').innerHTML = '<div style="padding: 2rem; text-align: center; color: #dc3545;">Error loading conversations: ' + (data.error || 'Unknown error') + '</div>';
+                }
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Response was not valid JSON:', text);
+                document.getElementById('conversationsList').innerHTML = '<div style="padding: 2rem; text-align: center; color: #dc3545;">Server error: Invalid response format</div>';
             }
         })
         .catch(error => {
             console.error('Fetch Error:', error);
+            document.getElementById('conversationsList').innerHTML = '<div style="padding: 2rem; text-align: center; color: #dc3545;">Network error: ' + error.message + '</div>';
         });
 }
 

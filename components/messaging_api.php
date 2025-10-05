@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Handle different include paths depending on where the API is called from
 if (file_exists('../components/connect.php')) {
     include '../components/connect.php';
@@ -14,7 +18,39 @@ header('Content-Type: application/json');
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+// Debug logging
+error_log("Messaging API called with action: " . $action);
+
 try {
+    // First, ensure tables exist
+    $conn->exec("
+    CREATE TABLE IF NOT EXISTS `conversations` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `admin_id` int(11) DEFAULT 1,
+        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `user_id` (`user_id`),
+        KEY `admin_id` (`admin_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
+    
+    $conn->exec("
+    CREATE TABLE IF NOT EXISTS `conversation_messages` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `conversation_id` int(11) NOT NULL,
+        `sender_type` enum('user','admin') NOT NULL,
+        `sender_id` int(11) NOT NULL,
+        `message` text NOT NULL,
+        `is_read` tinyint(1) DEFAULT 0,
+        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `conversation_id` (`conversation_id`),
+        KEY `sender_id` (`sender_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ");
+
     switch ($action) {
         case 'send_message':
             $conversation_id = $_POST['conversation_id'];
@@ -126,18 +162,37 @@ try {
             $user_id = $_POST['user_id'];
             $admin_id = $_POST['admin_id'] ?? 1;
 
+            if (empty($user_id)) {
+                throw new Exception('User ID is required');
+            }
+
             // Check if conversation already exists
             $check_conversation = $conn->prepare("SELECT id FROM conversations WHERE user_id = ? AND admin_id = ?");
             $check_conversation->execute([$user_id, $admin_id]);
             
             if ($check_conversation->rowCount() > 0) {
                 $conversation = $check_conversation->fetch(PDO::FETCH_ASSOC);
-                echo json_encode(['success' => true, 'conversation_id' => $conversation['id'], 'existing' => true]);
+                echo json_encode([
+                    'success' => true, 
+                    'conversation_id' => $conversation['id'], 
+                    'existing' => true,
+                    'debug' => ['user_id' => $user_id, 'admin_id' => $admin_id, 'action' => 'found_existing']
+                ]);
             } else {
-                $create_conversation = $conn->prepare("INSERT INTO conversations (user_id, admin_id) VALUES (?, ?)");
+                $create_conversation = $conn->prepare("INSERT INTO conversations (user_id, admin_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
                 $create_conversation->execute([$user_id, $admin_id]);
                 $conversation_id = $conn->lastInsertId();
-                echo json_encode(['success' => true, 'conversation_id' => $conversation_id, 'existing' => false]);
+                
+                if ($conversation_id) {
+                    echo json_encode([
+                        'success' => true, 
+                        'conversation_id' => $conversation_id, 
+                        'existing' => false,
+                        'debug' => ['user_id' => $user_id, 'admin_id' => $admin_id, 'action' => 'created_new', 'new_id' => $conversation_id]
+                    ]);
+                } else {
+                    throw new Exception('Failed to create conversation - no ID returned');
+                }
             }
             break;
 
