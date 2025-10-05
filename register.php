@@ -170,7 +170,7 @@ if (isset($_POST['submit'])) {
 
       <!-- ✅ Gmail only -->
       <input type="email" name="email" required 
-         placeholder="Enter your Gmail Address" 
+         placeholder="Enter your Email Address" 
          class="box" maxlength="50" 
          pattern="[a-zA-Z0-9._%+-]+@gmail\.com$"
          title="Only Gmail addresses are allowed"

@@ -428,12 +428,8 @@ if(!isset($admin_id)){
          </div>
          
          <div class="valid-id-container">
-            <h3><i class="fas fa-id-card"></i> Valid ID Document</h3>
+            <h3><i class="fas fa-id-card"></i> </h3>
             <div id="modal-valid-id-content">
-               <!-- Valid ID content will be inserted here -->
-            </div>
-            <p class="modal-footer-text">Click the image to view in full size</p>
-         </div>
       </div>
    </div>
 </div>
