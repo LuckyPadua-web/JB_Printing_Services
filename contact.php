@@ -42,7 +42,7 @@ if(isset($_SESSION['user_id'])){
 
 <section class="contact">
    <?php if($user_id): ?>
-   <h1 class="heading">Contact Admin</h1>
+  
    
    <div class="chat-container">
       <div class="conversations-list">

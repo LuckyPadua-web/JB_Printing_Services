@@ -127,18 +127,41 @@ if (isset($_POST['update_order'])) {
 // Delete order
 if (isset($_GET['delete'])) {
    $delete_id = $_GET['delete'];
-   $get_design_file = $conn->prepare("SELECT design_file FROM `orders` WHERE id = ?");
-   $get_design_file->execute([$delete_id]);
-   $design_data = $get_design_file->fetch(PDO::FETCH_ASSOC);
+   
+   try {
+      // Start transaction to ensure data integrity
+      $conn->beginTransaction();
+      
+      // Get design file info before deletion
+      $get_design_file = $conn->prepare("SELECT design_file FROM `orders` WHERE id = ?");
+      $get_design_file->execute([$delete_id]);
+      $design_data = $get_design_file->fetch(PDO::FETCH_ASSOC);
 
-   if (!empty($design_data['design_file']) && file_exists('../uploaded_designs/' . $design_data['design_file'])) {
-      unlink('../uploaded_designs/' . $design_data['design_file']);
+      // Delete related order_ratings first (if they exist)
+      $delete_ratings = $conn->prepare("DELETE FROM `order_ratings` WHERE order_id = ?");
+      $delete_ratings->execute([$delete_id]);
+
+      // Delete the order
+      $delete_order = $conn->prepare("DELETE FROM `orders` WHERE id = ?");
+      $delete_order->execute([$delete_id]);
+
+      // Delete design file if it exists
+      if (!empty($design_data['design_file']) && file_exists('../uploaded_designs/' . $design_data['design_file'])) {
+         unlink('../uploaded_designs/' . $design_data['design_file']);
+      }
+
+      // Commit the transaction
+      $conn->commit();
+      
+      $messages[] = ['text' => 'Order and related data deleted successfully!', 'type' => 'success'];
+      header('location:placed_orders.php');
+      exit;
+      
+   } catch (Exception $e) {
+      // Rollback transaction on error
+      $conn->rollBack();
+      $messages[] = ['text' => 'Error deleting order: ' . $e->getMessage(), 'type' => 'error'];
    }
-
-   $delete_order = $conn->prepare("DELETE FROM `orders` WHERE id = ?");
-   $delete_order->execute([$delete_id]);
-   header('location:placed_orders.php');
-   exit;
 }
 ?>
 
