@@ -69,9 +69,7 @@ for($i = 5; $i >= 0; $i--) {
 $select_recent_orders = $conn->prepare("SELECT * FROM `orders` ORDER BY placed_on DESC LIMIT 10");
 $select_recent_orders->execute();
 $recent_orders = $select_recent_orders->fetchAll(PDO::FETCH_ASSOC);
-
-// Top products (robust join for comma-separated product names)
-
+ 
 // Get all delivered orders
 $select_delivered_orders = $conn->prepare("SELECT total_products, total_price FROM orders WHERE payment_status = 'delivered'");
 $select_delivered_orders->execute();
@@ -116,6 +114,31 @@ foreach($product_counts as $name => $count) {
     $i++;
 }
 
+// Client details query (replaces the missing report_clients_query.php)
+try {
+    // Get all clients with their order details
+    $select_clients = $conn->prepare("
+        SELECT 
+            u.id,
+            u.name,
+            u.email,
+            u.number,
+            o.payment_method,
+            o.placed_on as date_ordered,
+            o.delivered_on as date_delivered
+        FROM `users` u
+        LEFT JOIN `orders` o ON u.id = o.user_id
+        WHERE u.id IS NOT NULL
+        ORDER BY u.id DESC
+    ");
+    $select_clients->execute();
+    $all_clients = $select_clients->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (PDOException $e) {
+    // Log error and initialize empty array
+    error_log("Client query error: " . $e->getMessage());
+    $all_clients = [];
+}
 ?>
 
 <!DOCTYPE html>
@@ -577,6 +600,7 @@ foreach($product_counts as $name => $count) {
       </div>
       
 
+
    <!-- Tables Section -->
    <div class="tables-section">
       <div class="table-container">
@@ -603,13 +627,34 @@ foreach($product_counts as $name => $count) {
          </div>
       </div>
 
-     
+      <div class="table-container">
+         <div class="table-header">
+            <i class="fas fa-chart-pie"></i> Order Status Distribution
+         </div>
+         <div class="table-content">
+            <div style="padding: 1rem;">
+               <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
+                  <span>Delivered</span>
+                  <span><strong><?= $total_delivered; ?></strong> (<?= $total_orders > 0 ? round(($total_delivered/$total_orders)*100, 1) : 0; ?>%)</span>
+               </div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
+                  <span>Pending</span>
+                  <span><strong><?= $total_pending; ?></strong> (<?= $total_orders > 0 ? round(($total_pending/$total_orders)*100, 1) : 0; ?>%)</span>
+               </div>
+               <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
+                  <span>Pre Order</span>
+                  <span><strong><?= $total_preorder; ?></strong> (<?= $total_orders > 0 ? round(($total_preorder/$total_orders)*100, 1) : 0; ?>%)</span>
+               </div>
+               <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--main-color); color: white; border-radius: 8px;">
+                  <span><strong>Total Orders</strong></span>
+                  <span><strong><?= $total_orders; ?></strong> (100%)</span>
+               </div>
+            </div>
          </div>
       </div>
    </div>
 
    <!-- Client Details Print Section -->
-   <?php include 'report_clients_query.php'; ?>
    <div class="client-details-print-section">
       <div style="text-align:center; margin-bottom:1.5rem;">
          <img src="../images/JB/Logo-A.png" alt="JB Printing Services Logo" style="height:70px; margin-bottom:10px;">
@@ -632,7 +677,7 @@ foreach($product_counts as $name => $count) {
             </tr>
          </thead>
          <tbody>
-            <?php if(count($all_clients) > 0): $i=1; foreach($all_clients as $client): ?>
+            <?php if(isset($all_clients) && count($all_clients) > 0): $i=1; foreach($all_clients as $client): ?>
             <tr>
                <td><?= $i++; ?></td>
                <td><?= htmlspecialchars($client['id']); ?></td>
@@ -644,47 +689,11 @@ foreach($product_counts as $name => $count) {
                <td><?= $client['date_delivered'] ? date('M d, Y', strtotime($client['date_delivered'])) : 'Pending'; ?></td>
             </tr>
             <?php endforeach; else: ?>
-            <tr><td colspan="8">No clients found.</td></tr>
+            <tr><td colspan="8" style="text-align: center; padding: 20px;">No clients found.</td></tr>
             <?php endif; ?>
          </tbody>
       </table>
    </div>
-
-   <style>
-   @media print {
-      body *:not(.client-details-print-section):not(.client-details-print-section *) {
-         display: none !important;
-      }
-      .client-details-print-section {
-         display: block !important;
-         margin: 0 auto;
-         padding: 2rem;
-         max-width: 900px;
-      }
-      .client-details-table {
-         width: 100%;
-         border-collapse: collapse;
-         margin-top: 2rem;
-         font-size: 1.2rem;
-      }
-      .client-details-table th, .client-details-table td {
-         border: 1px solid #333;
-         padding: 0.7rem 1rem;
-         text-align: left;
-      }
-      .client-details-table th {
-         background: #eee;
-      }
-      .client-details-table tr:nth-child(even) {
-         background: #f9f9f9;
-      }
-      h2 {
-         text-align: center;
-         margin-bottom: 1.5rem;
-      }
-   }
-   .client-details-print-section { display: none; }
-   </style>
 </div>
 
 <script>
