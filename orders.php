@@ -16,26 +16,26 @@ if(isset($_POST['submit_rating'])){
    $rating = $_POST['rating'];
    $review = $_POST['review'];
    
-   // Check if rating already exists for this order
+
    $check_rating = $conn->prepare("SELECT * FROM `order_ratings` WHERE order_id = ?");
    $check_rating->execute([$order_id]);
    
    if($check_rating->rowCount() > 0){
       $message[] = 'You have already rated this order!';
    }else{
-      // Get products from this order to associate ratings with products
+
       $get_order_products = $conn->prepare("SELECT DISTINCT product_id FROM `order_details` WHERE order_id = ?");
       $get_order_products->execute([$order_id]);
       
       if($get_order_products->rowCount() > 0){
-         // For each product in the order, create a rating entry
+
          while($product = $get_order_products->fetch(PDO::FETCH_ASSOC)){
             $insert_rating = $conn->prepare("INSERT INTO `order_ratings` (order_id, user_id, product_id, rating, review, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
             $insert_rating->execute([$order_id, $user_id, $product['product_id'], $rating, $review]);
          }
          $message[] = 'Thank you for your rating!';
       } else {
-         // Fallback: Insert without product_id if no order_details found
+
          $insert_rating = $conn->prepare("INSERT INTO `order_ratings` (order_id, user_id, rating, review, created_at) VALUES (?, ?, ?, ?, NOW())");
          $insert_rating->execute([$order_id, $user_id, $rating, $review]);
          $message[] = 'Thank you for your rating!';
@@ -51,12 +51,12 @@ if(isset($_POST['confirm_receipt'])){
    $message[] = 'Order marked as received! You can now rate your experience.';
 }
 
-// Add cancel order functionality
+
 if(isset($_POST['cancel_order'])){
    $order_id = $_POST['order_id'];
    $cancel_reason = $_POST['cancel_reason'] ?? '';
    
-   // Check if order can be cancelled (only pending or confirmed orders can be cancelled)
+
    $check_order = $conn->prepare("SELECT status FROM `orders` WHERE id = ? AND user_id = ?");
    $check_order->execute([$order_id, $user_id]);
    
@@ -64,11 +64,11 @@ if(isset($_POST['cancel_order'])){
       $order = $check_order->fetch(PDO::FETCH_ASSOC);
       $current_status = $order['status'];
       
-      // Define which statuses can be cancelled
+
       $cancellable_statuses = ['pending', 'confirmed'];
       
       if(in_array($current_status, $cancellable_statuses)){
-         // Update order status to cancelled and reset approval status for new requests
+
          $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_reason = ?, cancelled_at = NOW(), cancel_approval_status = NULL, admin_response_message = NULL, cancel_processed_at = NULL WHERE id = ? AND user_id = ?");
          $update_order->execute([$cancel_reason, $order_id, $user_id]);
          $message[] = 'Order cancellation request has been submitted successfully! Please wait for admin approval.';
@@ -90,10 +90,10 @@ if(isset($_POST['cancel_order'])){
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>orders</title>
 
-   <!-- font awesome cdn link  -->
+
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 
-   <!-- custom css file link  -->
+
    <link rel="stylesheet" href="css/style.css">
 
    <style>
@@ -477,9 +477,9 @@ if(isset($_POST['cancel_order'])){
 </head>
 <body>
    
-<!-- header section starts  -->
+
 <?php include 'components/user_header.php'; ?>
-<!-- header section ends -->
+
 
 <section class="orders">
 
@@ -491,7 +491,7 @@ if(isset($_POST['cancel_order'])){
       if($user_id == ''){
          echo '<p class="empty">please login to see your orders</p>';
       }else{
-         // Fixed SQL query without variation column
+
          $select_orders = $conn->prepare("
             SELECT o.*, 
                    GROUP_CONCAT(CONCAT(p.name, '|||', p.image, '|||', od.quantity, '|||', od.price) SEPARATOR ':::') as product_details,
@@ -540,15 +540,15 @@ if(isset($_POST['cancel_order'])){
                   $price = $product_data[3];
                   $total_product_price = $price * $quantity;
                   
-                  // Check if image exists and is not empty
+
                   $image_path = 'uploaded_img/' . $product_image;
                   $image_exists = !empty($product_image) && file_exists($image_path);
          ?>
 
-         <!--To Fix Image Display Issue-->
+
          <div class="product-item">
             <div class="product-info-container">
-               <!-- Product Image on the Left -->
+
                <?php if($image_exists): ?>
                <img src="<?= $image_path; ?>" alt="<?= htmlspecialchars($product_name); ?>" class="product-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                <div class="product-image-placeholder" style="display: none;">
@@ -560,9 +560,9 @@ if(isset($_POST['cancel_order'])){
                </div>
                <?php endif; ?>
                
-               <!-- Product Details on the Right -->
+
                <div class="product-text-info">
-                  <!-- Bigger Product Name -->
+
                   <div class="product-name"><?= htmlspecialchars($product_name); ?></div>
                   
                   <div class="product-meta">
@@ -581,7 +581,7 @@ if(isset($_POST['cancel_order'])){
                }
             }
          }else{
-            // Fallback to show basic order info if no product details
+
             echo '<div class="product-item">';
             echo '<div class="product-details">';
             echo '<div class="product-name">' . $fetch_orders['total_products'] . '</div>';
@@ -608,7 +608,7 @@ if(isset($_POST['cancel_order'])){
          </div>
          <?php endif; ?>
          
-         <!-- Admin Response for Cancelled Orders -->
+
          <?php if (!empty($fetch_orders['cancel_approval_status'])): ?>
          <div style="margin-top: 15px; padding: 15px; border-radius: 8px; 
                      <?php if ($fetch_orders['cancel_approval_status'] == 'disapproved'): ?>
@@ -633,7 +633,7 @@ if(isset($_POST['cancel_order'])){
          </div>
          <?php endif; ?>
          
-         <!-- Rating Section -->
+
          <?php if($fetch_orders['status'] == 'received' || $fetch_orders['status'] == 'delivered'): ?>
             <?php if($has_rating): ?>
             <div class="existing-rating">
@@ -722,7 +722,7 @@ if(isset($_POST['cancel_order'])){
 
 </section>
 
-<!-- Cancel Order Modal -->
+
 <div id="cancelModal" class="modal">
    <div class="modal-content">
       <h3 style="margin-bottom: 20px; color: #333;">Cancel Order</h3>
@@ -749,17 +749,16 @@ if(isset($_POST['cancel_order'])){
    </div>
 </div>
 
-<!-- footer section starts  -->
-<?php include 'components/footer.php'; ?>
-<!-- footer section ends -->
 
-<!-- custom js file link  -->
+<?php include 'components/footer.php'; ?>
+
+
 <script src="js/script.js"></script>
 
 <script>
-// Add functionality to action buttons
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Star rating functionality
+
     document.querySelectorAll('.rating-stars').forEach(starsContainer => {
         const stars = starsContainer.querySelectorAll('.star');
         const input = document.getElementById('rating-input-' + starsContainer.id.split('-')[1]);
@@ -769,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const rating = this.getAttribute('data-rating');
                 input.value = rating;
                 
-                // Update star display
+
                 stars.forEach((s, index) => {
                     if(index < rating) {
                         s.classList.remove('far');
@@ -781,7 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
-            // Hover effect
+ 
             star.addEventListener('mouseover', function() {
                 const rating = this.getAttribute('data-rating');
                 stars.forEach((s, index) => {
@@ -794,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Reset stars on mouse leave
+
         starsContainer.addEventListener('mouseleave', function() {
             const currentRating = input.value;
             stars.forEach((s, index) => {
@@ -809,7 +808,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Image error handling
+
     document.querySelectorAll('.product-image').forEach(img => {
         img.addEventListener('error', function() {
             this.style.display = 'none';
@@ -820,28 +819,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Cancel order functionality
+
     const modal = document.getElementById('cancelModal');
     const cancelCancelBtn = document.getElementById('cancelCancel');
     const cancelReason = document.getElementById('cancel_reason');
     const charCount = document.getElementById('charCount');
 
-    // Character count for cancel reason
+
     cancelReason.addEventListener('input', function() {
         charCount.textContent = this.value.length;
     });
 
-    // Close modal when clicking outside
+
     modal.addEventListener('click', function(e) {
         if(e.target === modal) {
             closeCancelModal();
         }
     });
 
-    // Close modal when clicking cancel button
+
     cancelCancelBtn.addEventListener('click', closeCancelModal);
 
-    // Add escape key to close modal
+
     document.addEventListener('keydown', function(e) {
         if(e.key === 'Escape' && modal.style.display === 'flex') {
             closeCancelModal();

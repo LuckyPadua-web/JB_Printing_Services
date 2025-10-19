@@ -2,10 +2,8 @@
 include 'components/connect.php';
 session_start();
 
-// ✅ Always initialize $message as array (prevents foreach warnings)
 $message = [];
 
-// ✅ Load PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
