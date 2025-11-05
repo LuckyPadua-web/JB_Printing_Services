@@ -8,6 +8,19 @@ $admin_id = $_SESSION['admin_id'];
 if(!isset($admin_id)){
    header('location:admin_login.php');
 }
+
+// Search functionality
+$search_query = '';
+if(isset($_GET['search']) && !empty($_GET['search'])) {
+   $search_query = $_GET['search'];
+   $select_account = $conn->prepare("SELECT * FROM `users` 
+                                   WHERE name LIKE ? OR email LIKE ? OR number LIKE ? OR address LIKE ?");
+   $search_param = "%$search_query%";
+   $select_account->execute([$search_param, $search_param, $search_param, $search_param]);
+} else {
+   $select_account = $conn->prepare("SELECT * FROM `users`");
+   $select_account->execute();
+}
 ?>
 
 <!DOCTYPE html>
@@ -25,6 +38,71 @@ if(!isset($admin_id)){
    <link rel="stylesheet" href="../css/admin_style.css">
 
    <style>
+      .search-container {
+         margin: 20px 0;
+         display: flex;
+         justify-content: center;
+         gap: 10px;
+      }
+      
+      .search-box {
+         padding: 12px 20px;
+         width: 100%;
+         max-width: 500px;
+         border: 2px solid #2980b9;
+         border-radius: 25px;
+         font-size: 16px;
+         outline: none;
+         transition: all 0.3s ease;
+      }
+      
+      .search-box:focus {
+         box-shadow: 0 0 10px rgba(41, 128, 185, 0.3);
+      }
+      
+      .search-btn {
+         background: #2980b9;
+         color: white;
+         border: none;
+         padding: 12px 25px;
+         border-radius: 25px;
+         cursor: pointer;
+         font-size: 16px;
+         transition: all 0.3s ease;
+      }
+      
+      .search-btn:hover {
+         background: #1c5d8a;
+         transform: translateY(-2px);
+      }
+      
+      .clear-search {
+         background: #95a5a6;
+         color: white;
+         border: none;
+         padding: 12px 20px;
+         border-radius: 25px;
+         cursor: pointer;
+         font-size: 16px;
+         transition: all 0.3s ease;
+         text-decoration: none;
+         display: inline-block;
+      }
+      
+      .clear-search:hover {
+         background: #7f8c8d;
+         transform: translateY(-2px);
+         text-decoration: none;
+         color: white;
+      }
+      
+      .search-results-info {
+         text-align: center;
+         margin: 15px 0;
+         color: #7f8c8d;
+         font-size: 16px;
+      }
+      
       .accounts-table {
          width: 100%;
          border-collapse: collapse;
@@ -242,6 +320,15 @@ if(!isset($admin_id)){
       }
       
       @media (max-width: 768px) {
+         .search-container {
+            flex-direction: column;
+            align-items: center;
+         }
+         
+         .search-box {
+            max-width: 100%;
+         }
+         
          .accounts-table {
             font-size: 14px;
          }
@@ -329,11 +416,43 @@ if(!isset($admin_id)){
 
    <h1 class="heading">Users Account Details</h1>
 
+   <!-- Search Form -->
+   <div class="search-container">
+      <form method="GET" action="" style="display: flex; gap: 10px; width: 100%; max-width: 600px; align-items: center;">
+         <input type="text" name="search" class="search-box" 
+                placeholder="Search users by name, email, phone, or address..." 
+                value="<?= htmlspecialchars($search_query) ?>">
+         <button type="submit" class="search-btn">
+            <i class="fas fa-search"></i> Search
+         </button>
+         <?php if(!empty($search_query)): ?>
+            <a href="users_accounts.php" class="clear-search">
+               <i class="fas fa-times"></i> Clear
+            </a>
+         <?php endif; ?>
+      </form>
+   </div>
+
    <?php
-      $select_account = $conn->prepare("SELECT * FROM `users`");
-      $select_account->execute();
       if($select_account->rowCount() > 0){
+         $total_users = $select_account->rowCount();
    ?>
+   
+   <!-- Search Results Info -->
+   <?php if(!empty($search_query)): ?>
+      <div class="search-results-info">
+         <i class="fas fa-info-circle"></i> 
+         Found <?= $total_users ?> user(s) matching "<?= htmlspecialchars($search_query) ?>"
+         <?php if($total_users === 0): ?>
+            - <a href="users_accounts.php" style="color: #2980b9;">Show all users</a>
+         <?php endif; ?>
+      </div>
+   <?php else: ?>
+      <div class="search-results-info">
+         <i class="fas fa-users"></i> 
+         Total <?= $total_users ?> user(s) in the system
+      </div>
+   <?php endif; ?>
    
    <div class="table-container">
       <table class="accounts-table">
@@ -391,7 +510,12 @@ if(!isset($admin_id)){
    <?php } else { ?>
       <div class="empty-message">
          <i class="fas fa-users" style="font-size: 48px; margin-bottom: 20px;"></i>
-         <p>No user accounts available</p>
+         <?php if(!empty($search_query)): ?>
+            <p>No users found matching "<?= htmlspecialchars($search_query) ?>"</p>
+            <a href="users_accounts.php" class="btn" style="margin-top: 15px;">View All Users</a>
+         <?php else: ?>
+            <p>No user accounts available</p>
+         <?php endif; ?>
       </div>
    <?php } ?>
 
@@ -428,8 +552,12 @@ if(!isset($admin_id)){
          </div>
          
          <div class="valid-id-container">
-            <h3><i class="fas fa-id-card"></i> </h3>
-            <div id="modal-valid-id-content">
+            <h3><i class="fas fa-id-card"></i> Valid ID</h3>
+            <div id="modal-valid-id-content"></div>
+         </div>
+      </div>
+      <div class="modal-footer-text">
+         Click outside this window or press ESC to close
       </div>
    </div>
 </div>

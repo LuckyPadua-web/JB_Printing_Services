@@ -55,12 +55,29 @@ if (isset($_POST['submit'])) {
    elseif ($pass !== $cpass) {
       $message[] = 'Passwords do not match!';
    } else {
-      // ✅ Check if email/number exists
-      $select_user = $conn->prepare("SELECT * FROM `users` WHERE email = ? OR number = ?");
-      $select_user->execute([$email, $number]);
+      // ✅ Check if name or email already exists (case-insensitive for name)
+      $select_user = $conn->prepare("SELECT * FROM `users` WHERE LOWER(name) = LOWER(?) OR email = ?");
+      $select_user->execute([$name, $email]);
 
       if ($select_user->rowCount() > 0) {
-         $message[] = 'Email or number already exists!';
+         $existing_users = $select_user->fetchAll(PDO::FETCH_ASSOC);
+         $has_duplicate = false;
+
+         foreach ($existing_users as $existing) {
+            if (strcasecmp($existing['name'], $name) == 0) {
+               $message[] = 'Name already exists!';
+               $has_duplicate = true;
+               break;
+            }
+         }
+         
+         foreach ($existing_users as $existing) {
+            if ($existing['email'] === $email) {
+               $message[] = 'Email already exists!';
+               $has_duplicate = true;
+               break;
+            }
+         }
       } else {
          // ✅ Secure password hashing - KEEP THIS AS password_hash
          $hashed_pass = password_hash($pass, PASSWORD_DEFAULT);
