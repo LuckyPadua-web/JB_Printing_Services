@@ -41,7 +41,6 @@ if (isset($_POST['submit'])) {
    $address = filter_var($_POST['address'], FILTER_SANITIZE_STRING);
    $total_products = $_POST['total_products'];
    $total_price = $_POST['total_price'];
-   $gcash_ref = !empty($_POST['gcash_ref']) ? filter_var($_POST['gcash_ref'], FILTER_SANITIZE_STRING) : null;
    $expected_delivery_date = !empty($_POST['expected_delivery_date']) ? $_POST['expected_delivery_date'] : null;
 
    // Handle design file upload
@@ -122,8 +121,8 @@ if (isset($_POST['submit'])) {
       } elseif ($method === 'Gcash' && empty($gcash_screenshot)) {
          $message[] = 'Please upload a screenshot of your GCash payment confirmation!';
       } else {
-         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_ref, gcash_screenshot, design_file, expected_delivery_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_ref, $gcash_screenshot, $design_file, $expected_delivery_date]);
+         $insert_order = $conn->prepare("INSERT INTO `orders` (user_id, name, number, email, method, address, total_products, total_price, gcash_screenshot, design_file, expected_delivery_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+         $insert_order->execute([$user_id, $name, $number, $email, $method, $address, $total_products, $total_price, $gcash_screenshot, $design_file, $expected_delivery_date]);
 
          // Get the inserted order ID
          $order_id = $conn->lastInsertId();
@@ -273,9 +272,9 @@ if (isset($_POST['submit'])) {
 
          <div id="gcash-details" style="display:none; margin-top: 20px;">
             <div class="gcash-instructions">
-               <p><strong>GCash Payment Instructions:</strong></p>
-               <p>Please scan the QR code below and upload a screenshot of your payment confirmation:</p>
-               <ul>
+               <p style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">GCash Payment Instructions:</p>
+               <p style="font-size: 18px; margin-bottom: 15px;">Please scan the QR code below and upload a screenshot of your payment confirmation:</p>
+               <ul style="font-size: 17px;">
                   <li>Make sure the screenshot shows the transaction details clearly</li>
                   <li>Include the transaction amount and recipient information</li>
                   <li>Ensure the screenshot is clear and readable</li>
@@ -291,17 +290,10 @@ if (isset($_POST['submit'])) {
                   <i class="fas fa-camera"></i> Upload Payment Screenshot:
                </label>
                <input type="file" name="gcash_screenshot" id="gcash_screenshot" class="box" accept="image/jpg, image/jpeg, image/png, image/webp" onchange="previewGCashScreenshot(event)">
-               <small style="color: #666; display: block; margin-top: 5px;">
+               <small style="color: #666; display: block; margin-top: 8px; font-size: 16px;">
                   Accepted formats: JPG, JPEG, PNG, WEBP (Max size: 5MB)
                </small>
                <img id="gcash_screenshot_preview" class="screenshot-preview" alt="Screenshot Preview">
-            </div>
-
-            <div style="margin-top: 15px;">
-               <label style="font-size: 16px; display: block; margin-bottom: 10px;">
-                  GCash Reference Number (Optional):
-               </label>
-               <input type="text" name="gcash_ref" id="gcash-ref" class="box" placeholder="Enter reference number if available">
             </div>
          </div>
 

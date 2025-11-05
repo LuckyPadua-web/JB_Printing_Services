@@ -17,150 +17,231 @@ $messages = [];
 // Search functionality
 $search_query = '';
 $where_clause = '';
+$search_params = [];
+
 if (isset($_POST['search']) || isset($_GET['search'])) {
-   $search_query = isset($_POST['search_term']) ? $_POST['search_term'] : $_GET['search'];
+   $search_query = isset($_POST['search_term']) ? trim($_POST['search_term']) : (isset($_GET['search']) ? trim($_GET['search']) : '');
    if (!empty($search_query)) {
-      $where_clause = "WHERE name LIKE ? OR gcash_ref LIKE ?";
+      $where_clause = "WHERE name LIKE ? OR gcash_screenshot LIKE ? OR id LIKE ?";
+      $search_param = "%{$search_query}%";
+      $search_params = [$search_param, $search_param, $search_param];
    }
 }
 
 // Handle cancel approval/disapproval
 if (isset($_POST['process_cancel'])) {
-   $order_id = $_POST['order_id'];
-   $approval_status = $_POST['approval_status'];
-   $admin_message = $_POST['admin_message'] ?? '';
+   $order_id = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
+   $approval_status = $_POST['approval_status'] ?? '';
+   $admin_message = trim($_POST['admin_message'] ?? '');
    
-   // Get current order details
-   $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
-   $get_order->execute([$order_id]);
-   $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
-   
-   if ($order_data) {
-      if ($approval_status == 'approved') {
-         // Approve the cancellation - update status to cancelled
-         $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_approval_status = 'approved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
-         $update_order->execute([$admin_message, $order_id]);
-         $messages[] = ['text' => 'Order cancellation approved successfully!', 'type' => 'success'];
-         
-         // Send email notification to customer about approval
-         $customer_email = $order_data['email'];
-         $customer_name = $order_data['name'];
-         $order_details = "Order ID: #" . $order_id . "\n";
-         $order_details .= "Your cancellation request has been APPROVED.\n";
-         if (!empty($admin_message)) {
-            $order_details .= "Admin Message: " . $admin_message . "\n";
+   if ($order_id && in_array($approval_status, ['approved', 'disapproved'])) {
+      // Get current order details
+      $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
+      $get_order->execute([$order_id]);
+      $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
+      
+      if ($order_data) {
+         if ($approval_status == 'approved') {
+            // Approve the cancellation - update status to cancelled
+            $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_approval_status = 'approved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
+            $update_order->execute([$admin_message, $order_id]);
+            $messages[] = ['text' => 'Order cancellation approved successfully!', 'type' => 'success'];
+            
+            // Send email notification to customer about approval
+            $customer_email = $order_data['email'];
+            $customer_name = $order_data['name'];
+            $order_details = "Order ID: #" . $order_id . "\n";
+            $order_details .= "Your cancellation request has been APPROVED.\n";
+            if (!empty($admin_message)) {
+               $order_details .= "Admin Message: " . $admin_message . "\n";
+            }
+            $order_details .= "Your order has been cancelled and any refund will be processed accordingly.";
+            
+            sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation approved', $order_details);
+            
+         } else {
+            // Disapprove the cancellation - keep original status but mark as disapproved
+            $update_order = $conn->prepare("UPDATE `orders` SET cancel_approval_status = 'disapproved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
+            $update_order->execute([$admin_message, $order_id]);
+            $messages[] = ['text' => 'Order cancellation disapproved. Customer will be notified.', 'type' => 'warning'];
+            
+            // Send email notification to customer about disapproval
+            $customer_email = $order_data['email'];
+            $customer_name = $order_data['name'];
+            $order_details = "Order ID: #" . $order_id . "\n";
+            $order_details .= "Your cancellation request has been DISAPPROVED.\n";
+            $order_details .= "Your order will continue to be processed as normal.\n";
+            if (!empty($admin_message)) {
+               $order_details .= "Admin Message: " . $admin_message . "\n";
+            }
+            $order_details .= "If you have concerns, please contact our support team.";
+            
+            sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation disapproved', $order_details);
          }
-         $order_details .= "Your order has been cancelled and any refund will be processed accordingly.";
-         
-         sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation approved', $order_details);
-         
       } else {
-         // Disapprove the cancellation - keep original status
-         $update_order = $conn->prepare("UPDATE `orders` SET cancel_approval_status = 'disapproved', admin_response_message = ?, cancel_processed_at = NOW() WHERE id = ?");
-         $update_order->execute([$admin_message, $order_id]);
-         $messages[] = ['text' => 'Order cancellation disapproved. Customer will be notified.', 'type' => 'warning'];
-         
-         // Send email notification to customer about disapproval
-         $customer_email = $order_data['email'];
-         $customer_name = $order_data['name'];
-         $order_details = "Order ID: #" . $order_id . "\n";
-         $order_details .= "Your cancellation request has been DISAPPROVED.\n";
-         $order_details .= "Your order will continue to be processed as normal.\n";
-         if (!empty($admin_message)) {
-            $order_details .= "Admin Message: " . $admin_message . "\n";
-         }
-         $order_details .= "If you have concerns, please contact our support team.";
-         
-         sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation disapproved', $order_details);
+         $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
       }
    } else {
-      $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
+      $messages[] = ['text' => 'Invalid request parameters!', 'type' => 'error'];
+   }
+}
+
+// Handle quick approve/disapprove actions (new functionality)
+if (isset($_GET['approve_cancel']) || isset($_GET['disapprove_cancel'])) {
+   $order_id = filter_input(INPUT_GET, isset($_GET['approve_cancel']) ? 'approve_cancel' : 'disapprove_cancel', FILTER_VALIDATE_INT);
+   $action = isset($_GET['approve_cancel']) ? 'approved' : 'disapproved';
+   
+   if ($order_id) {
+      // Get current order details
+      $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
+      $get_order->execute([$order_id]);
+      $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
+      
+      if ($order_data) {
+         if ($action == 'approved') {
+            // Approve the cancellation
+            $update_order = $conn->prepare("UPDATE `orders` SET status = 'cancelled', cancel_approval_status = 'approved', cancel_processed_at = NOW() WHERE id = ?");
+            $update_order->execute([$order_id]);
+            $messages[] = ['text' => 'Order cancellation approved successfully!', 'type' => 'success'];
+            
+            // Send email notification
+            $customer_email = $order_data['email'];
+            $customer_name = $order_data['name'];
+            $order_details = "Order ID: #" . $order_id . "\n";
+            $order_details .= "Your cancellation request has been APPROVED.\n";
+            $order_details .= "Your order has been cancelled and any refund will be processed accordingly.";
+            
+            sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation approved', $order_details);
+            
+         } else {
+            // Disapprove the cancellation
+            $update_order = $conn->prepare("UPDATE `orders` SET cancel_approval_status = 'disapproved', cancel_processed_at = NOW() WHERE id = ?");
+            $update_order->execute([$order_id]);
+            $messages[] = ['text' => 'Order cancellation disapproved. Customer will be notified.', 'type' => 'warning'];
+            
+            // Send email notification
+            $customer_email = $order_data['email'];
+            $customer_name = $order_data['name'];
+            $order_details = "Order ID: #" . $order_id . "\n";
+            $order_details .= "Your cancellation request has been DISAPPROVED.\n";
+            $order_details .= "Your order will continue to be processed as normal.\n";
+            $order_details .= "If you have concerns, please contact our support team.";
+            
+            sendOrderStatusEmail($customer_email, $customer_name, $order_id, 'cancellation disapproved', $order_details);
+         }
+         
+         // Redirect to avoid form resubmission
+         header('location: placed_orders.php');
+         exit;
+      } else {
+         $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
+      }
+   } else {
+      $messages[] = ['text' => 'Invalid order ID!', 'type' => 'error'];
    }
 }
 
 // Update order status and delivery date
 if (isset($_POST['update_order'])) {
-   $order_id = $_POST['order_id'];
-   $order_status = $_POST['order_status'];
-   $expected_delivery_date = $_POST['expected_delivery_date'];
+   $order_id = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
+   $order_status = $_POST['order_status'] ?? '';
+   $expected_delivery_date = $_POST['expected_delivery_date'] ?? '';
    
-   // Get current order details for email
-   $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
-   $get_order->execute([$order_id]);
-   $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
-   
-   if ($order_data) {
-      // Update the order
-      $update_order = $conn->prepare("UPDATE `orders` SET status = ?, expected_delivery_date = ? WHERE id = ?");
-      $update_order->execute([$order_status, $expected_delivery_date, $order_id]);
+   if ($order_id && $order_status) {
+      // Get current order details for email
+      $get_order = $conn->prepare("SELECT * FROM `orders` WHERE id = ?");
+      $get_order->execute([$order_id]);
+      $order_data = $get_order->fetch(PDO::FETCH_ASSOC);
       
-      // Send email notification to customer
-      $customer_email = $order_data['email'];
-      $customer_name = $order_data['name'];
-      
-      // Prepare order details for email
-      $order_details = "Order ID: #" . $order_id . "\n";
-      $order_details .= "Total Amount: ₱" . number_format($order_data['total_price'], 2) . "\n";
-      $order_details .= "Payment Method: " . $order_data['method'] . "\n";
-      
-      if (!empty($expected_delivery_date)) {
-         $order_details .= "Expected Delivery: " . date('F j, Y', strtotime($expected_delivery_date)) . "\n";
-      }
-      
-      if (!empty($order_data['total_products'])) {
-         $order_details .= "Products: " . $order_data['total_products'];
-      }
-      
-      // Send email notification
-      $email_sent = sendOrderStatusEmail($customer_email, $customer_name, $order_id, $order_status, $order_details);
-      
-      if ($email_sent) {
-         $messages[] = ['text' => 'Order updated successfully and email notification sent to customer!', 'type' => 'success'];
+      if ($order_data) {
+         // Update the order
+         $update_order = $conn->prepare("UPDATE `orders` SET status = ?, expected_delivery_date = ? WHERE id = ?");
+         $update_order->execute([$order_status, $expected_delivery_date, $order_id]);
+         
+         // Send email notification to customer
+         $customer_email = $order_data['email'];
+         $customer_name = $order_data['name'];
+         
+         // Prepare order details for email
+         $order_details = "Order ID: #" . $order_id . "\n";
+         $order_details .= "Total Amount: ₱" . number_format($order_data['total_price'], 2) . "\n";
+         $order_details .= "Payment Method: " . $order_data['method'] . "\n";
+         
+         if (!empty($expected_delivery_date)) {
+            $order_details .= "Expected Delivery: " . date('F j, Y', strtotime($expected_delivery_date)) . "\n";
+         }
+         
+         if (!empty($order_data['total_products'])) {
+            $order_details .= "Products: " . $order_data['total_products'];
+         }
+         
+         // Send email notification
+         $email_sent = sendOrderStatusEmail($customer_email, $customer_name, $order_id, $order_status, $order_details);
+         
+         if ($email_sent) {
+            $messages[] = ['text' => 'Order updated successfully and email notification sent to customer!', 'type' => 'success'];
+         } else {
+            $messages[] = ['text' => 'Order updated successfully, but email notification failed to send.', 'type' => 'warning'];
+         }
       } else {
-         $messages[] = ['text' => 'Order updated successfully, but email notification failed to send.', 'type' => 'warning'];
+         $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
       }
    } else {
-      $messages[] = ['text' => 'Order not found!', 'type' => 'error'];
+      $messages[] = ['text' => 'Invalid order data!', 'type' => 'error'];
    }
 }
 
 // Delete order
 if (isset($_GET['delete'])) {
-   $delete_id = $_GET['delete'];
+   $delete_id = filter_input(INPUT_GET, 'delete', FILTER_VALIDATE_INT);
    
-   try {
-      // Start transaction to ensure data integrity
-      $conn->beginTransaction();
-      
-      // Get design file info before deletion
-      $get_design_file = $conn->prepare("SELECT design_file FROM `orders` WHERE id = ?");
-      $get_design_file->execute([$delete_id]);
-      $design_data = $get_design_file->fetch(PDO::FETCH_ASSOC);
+   if ($delete_id) {
+      try {
+         // Start transaction to ensure data integrity
+         $conn->beginTransaction();
+         
+         // Get design file info before deletion
+         $get_design_file = $conn->prepare("SELECT design_file FROM `orders` WHERE id = ?");
+         $get_design_file->execute([$delete_id]);
+         $design_data = $get_design_file->fetch(PDO::FETCH_ASSOC);
 
-      // Delete related order_ratings first (if they exist)
-      $delete_ratings = $conn->prepare("DELETE FROM `order_ratings` WHERE order_id = ?");
-      $delete_ratings->execute([$delete_id]);
+         // Get GCash screenshot info before deletion
+         $get_gcash_screenshot = $conn->prepare("SELECT gcash_screenshot FROM `orders` WHERE id = ?");
+         $get_gcash_screenshot->execute([$delete_id]);
+         $gcash_data = $get_gcash_screenshot->fetch(PDO::FETCH_ASSOC);
 
-      // Delete the order
-      $delete_order = $conn->prepare("DELETE FROM `orders` WHERE id = ?");
-      $delete_order->execute([$delete_id]);
+         // Delete related order_ratings first (if they exist)
+         $delete_ratings = $conn->prepare("DELETE FROM `order_ratings` WHERE order_id = ?");
+         $delete_ratings->execute([$delete_id]);
 
-      // Delete design file if it exists
-      if (!empty($design_data['design_file']) && file_exists('../uploaded_designs/' . $design_data['design_file'])) {
-         unlink('../uploaded_designs/' . $design_data['design_file']);
+         // Delete the order
+         $delete_order = $conn->prepare("DELETE FROM `orders` WHERE id = ?");
+         $delete_order->execute([$delete_id]);
+
+         // Delete design file if it exists
+         if (!empty($design_data['design_file']) && file_exists('../uploaded_designs/' . $design_data['design_file'])) {
+            unlink('../uploaded_designs/' . $design_data['design_file']);
+         }
+
+         // Delete GCash screenshot if it exists
+         if (!empty($gcash_data['gcash_screenshot']) && file_exists('../uploaded_gcash/' . $gcash_data['gcash_screenshot'])) {
+            unlink('../uploaded_gcash/' . $gcash_data['gcash_screenshot']);
+         }
+
+         // Commit the transaction
+         $conn->commit();
+         
+         $messages[] = ['text' => 'Order and related data deleted successfully!', 'type' => 'success'];
+         header('location:placed_orders.php');
+         exit;
+         
+      } catch (Exception $e) {
+         // Rollback transaction on error
+         $conn->rollBack();
+         $messages[] = ['text' => 'Error deleting order: ' . $e->getMessage(), 'type' => 'error'];
       }
-
-      // Commit the transaction
-      $conn->commit();
-      
-      $messages[] = ['text' => 'Order and related data deleted successfully!', 'type' => 'success'];
-      header('location:placed_orders.php');
-      exit;
-      
-   } catch (Exception $e) {
-      // Rollback transaction on error
-      $conn->rollBack();
-      $messages[] = ['text' => 'Error deleting order: ' . $e->getMessage(), 'type' => 'error'];
+   } else {
+      $messages[] = ['text' => 'Invalid order ID for deletion!', 'type' => 'error'];
    }
 }
 ?>
@@ -228,6 +309,8 @@ if (isset($_GET['delete'])) {
       .badge.status-shipped { background: #d4edda; color: #155724; }
       .badge.status-delivered { background: #d1e7dd; color: #0f5132; }
       .badge.status-cancelled { background: #f8d7da; color: #721c24; }
+      .badge.status-pre-order { background: #e2e3e5; color: #383d41; }
+      .badge.status-to-received { background: #d1ecf1; color: #0c5460; }
       
       /* Cancel status badges */
       .cancel-status {
@@ -272,8 +355,7 @@ if (isset($_GET['delete'])) {
          margin-bottom: 5px;
       }
       
-      .btn-approve {
-         background: #28a745;
+      .btn-approve, .btn-disapprove {
          color: white;
          padding: 5px 10px;
          border: none;
@@ -281,16 +363,32 @@ if (isset($_GET['delete'])) {
          cursor: pointer;
          margin-right: 5px;
          font-size: 1.2rem;
+         text-decoration: none;
+         display: inline-block;
+         text-align: center;
+      }
+      
+      .btn-approve {
+         background: #28a745;
+      }
+      
+      .btn-approve:hover {
+         background: #218838;
       }
       
       .btn-disapprove {
          background: #dc3545;
-         color: white;
-         padding: 5px 10px;
-         border: none;
-         border-radius: 3px;
-         cursor: pointer;
-         font-size: 1.2rem;
+      }
+      
+      .btn-disapprove:hover {
+         background: #c82333;
+      }
+
+      .quick-actions {
+         margin-top: 10px;
+         display: flex;
+         gap: 5px;
+         flex-wrap: wrap;
       }
 
       form.inline-form {
@@ -347,7 +445,7 @@ if (isset($_GET['delete'])) {
          min-width: 250px;
       }
 
-      /* Modal styles for viewing design */
+      /* Modal styles for viewing design and GCash screenshot */
       .modal {
          display: none;
          position: fixed;
@@ -387,7 +485,7 @@ if (isset($_GET['delete'])) {
          text-decoration: none;
       }
 
-      .design-image {
+      .design-image, .gcash-image {
          width: 100%;
          height: auto;
          max-height: 70vh;
@@ -733,6 +831,24 @@ if (isset($_GET['delete'])) {
       .btn-cancel-modal:hover {
          background: #5a6268;
       }
+      
+      /* GCash Screenshot Styles */
+      .gcash-screenshot-link {
+         background: #3498db;
+         color: white;
+         padding: 5px 10px;
+         border-radius: 5px;
+         text-decoration: none;
+         font-size: 1.2rem;
+         display: inline-block;
+         margin-top: 5px;
+      }
+      
+      .gcash-screenshot-link:hover {
+         background: #2980b9;
+         color: white;
+         text-decoration: none;
+      }
    </style>
 </head>
 <body>
@@ -747,7 +863,7 @@ if (isset($_GET['delete'])) {
       foreach($messages as $message){
          $message_text = is_array($message) ? $message['text'] : $message;
          $message_type = is_array($message) ? $message['type'] : 'success';
-         echo '<div class="message '.$message_type.' auto-hide">'.$message_text.'</div>';
+         echo '<div class="message '.$message_type.' auto-hide">'.htmlspecialchars($message_text).'</div>';
       }
    }
    ?>
@@ -756,7 +872,7 @@ if (isset($_GET['delete'])) {
    <div class="search-container">
       <form action="" method="POST" class="search-form">
          <input type="text" name="search_term" class="search-input" 
-                placeholder="Search by customer name or GCash reference number..." 
+                placeholder="Search by customer name or GCash screenshot..." 
                 value="<?= htmlspecialchars($search_query) ?>">
          <button type="submit" name="search" class="search-btn">
             <i class="fas fa-search"></i> Search
@@ -780,7 +896,7 @@ if (isset($_GET['delete'])) {
                <th>Order ID</th>
                <th>Customer</th>
                <th>Method</th>
-               <th>GCash Ref</th>
+               <th>GCash Screenshot</th>
                <th>Placed On</th>
                <th>Delivery</th>
                <th>Order Status</th>
@@ -796,8 +912,7 @@ if (isset($_GET['delete'])) {
             $select_orders = $conn->prepare($sql);
             
             if (!empty($search_query)) {
-               $search_param = "%{$search_query}%";
-               $select_orders->execute([$search_param, $search_param]);
+               $select_orders->execute($search_params);
             } else {
                $select_orders->execute();
             }
@@ -809,15 +924,20 @@ if (isset($_GET['delete'])) {
 
                   // Order status classes
                   $order_status = $order['status'] ?? 'pending';
-                  $order_status_class = 'status-' . $order_status;
+                  $order_status_class = 'status-' . str_replace(' ', '-', strtolower($order_status));
+                  
+                  // Check if order has pending cancellation
+                  $has_pending_cancellation = ($order_status == 'cancelled' && !empty($order['cancel_reason']) && empty($order['cancel_approval_status']));
          ?>
             <tr>
                <td class="order-id"><?= htmlspecialchars($order['id']) ?></td>
                <td><?= htmlspecialchars($order['name']) ?></td>
                <td><?= htmlspecialchars($order['method']) ?></td>
                <td>
-                  <?php if (!empty($order['gcash_ref'])): ?>
-                     <span style="font-weight: bold; color: #27ae60;"><?= htmlspecialchars($order['gcash_ref']) ?></span>
+                  <?php if (!empty($order['gcash_screenshot'])): ?>
+                     <a href="#" class="gcash-screenshot-link" onclick="viewGCashScreenshot('<?= htmlspecialchars($order['gcash_screenshot']) ?>')">
+                        <i class="fas fa-camera"></i> View Screenshot
+                     </a>
                   <?php else: ?>
                      <span style="color: #999;">N/A</span>
                   <?php endif; ?>
@@ -839,9 +959,17 @@ if (isset($_GET['delete'])) {
                            <div class="cancel-reason">
                               <strong>Reason:</strong> <?= htmlspecialchars($order['cancel_reason']) ?>
                            </div>
-                           <button class="btn-approve" onclick="openApprovalModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['name']) ?>', '<?= htmlspecialchars($order['cancel_reason']) ?>')">
-                              <i class="fas fa-check"></i> Review
-                           </button>
+                           <div class="quick-actions">
+                              <a href="placed_orders.php?approve_cancel=<?= $order['id'] ?>" class="btn-approve" onclick="return confirm('Are you sure you want to APPROVE this cancellation?')">
+                                 <i class="fas fa-check"></i> Quick Approve
+                              </a>
+                              <a href="placed_orders.php?disapprove_cancel=<?= $order['id'] ?>" class="btn-disapprove" onclick="return confirm('Are you sure you want to DISAPPROVE this cancellation?')">
+                                 <i class="fas fa-times"></i> Quick Disapprove
+                              </a>
+                              <button class="btn-approve" style="background: #007bff;" onclick="openApprovalModal(<?= $order['id'] ?>, '<?= htmlspecialchars(addslashes($order['name'])) ?>', '<?= htmlspecialchars(addslashes($order['cancel_reason'])) ?>')">
+                                 <i class="fas fa-comment"></i> With Message
+                              </button>
+                           </div>
                         </div>
                      <?php elseif ($order['cancel_approval_status'] == 'approved'): ?>
                         <span class="cancel-status cancel-approved">
@@ -875,7 +1003,6 @@ if (isset($_GET['delete'])) {
                         <option value="Pre Order" <?= $order_status == 'Pre Order' ? 'selected' : '' ?>>Pre Order</option>
                         <option value="To Received" <?= $order_status == 'To Received' ? 'selected' : '' ?>>To Received</option>
                         <option value="delivered" <?= $order_status == 'delivered' ? 'selected' : '' ?>>Delivered</option>
-
                      </select>
                      
                      <input type="date" name="expected_delivery_date" value="<?= $order['expected_delivery_date']; ?>" min="<?= date('Y-m-d'); ?>">
@@ -890,7 +1017,7 @@ if (isset($_GET['delete'])) {
                      <span style="color: #999; font-size: 1.2rem; margin-top: 0.5rem; display: block;">No design uploaded</span>
                   <?php endif; ?>
 
-                  <a href="placed_orders.php?delete=<?= $order['id']; ?>" class="delete-btn" onclick="return confirm('Delete this order?')">
+                  <a href="placed_orders.php?delete=<?= $order['id']; ?>" class="delete-btn" onclick="return confirm('Are you sure you want to delete this order? This action cannot be undone.')">
                      <i class="fas fa-trash"></i> Delete Order
                   </a>
                </td>
@@ -916,6 +1043,15 @@ if (isset($_GET['delete'])) {
       <span class="close">&times;</span>
       <h3 class="modal-title">Design Preview</h3>
       <img id="designImage" class="design-image" src="" alt="Design Preview">
+   </div>
+</div>
+
+<!-- GCash Screenshot View Modal -->
+<div id="gcashModal" class="modal">
+   <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 class="modal-title">GCash Payment Screenshot</h3>
+      <img id="gcashImage" class="gcash-image" src="" alt="GCash Payment Screenshot">
    </div>
 </div>
 
@@ -966,32 +1102,44 @@ if (isset($_GET['delete'])) {
 <script src="../js/admin_script.js"></script>
 <script>
 // Modal functionality
-const modal = document.getElementById('designModal');
-const modalImg = document.getElementById('designImage');
-const closeBtn = document.getElementsByClassName('close')[0];
+const designModal = document.getElementById('designModal');
+const gcashModal = document.getElementById('gcashModal');
+const designModalImg = document.getElementById('designImage');
+const gcashModalImg = document.getElementById('gcashImage');
+const closeBtns = document.getElementsByClassName('close');
 
 function viewDesign(filename) {
-   modal.style.display = 'block';
-   modalImg.src = '../uploaded_designs/' + filename;
+   designModal.style.display = 'block';
+   designModalImg.src = '../uploaded_designs/' + encodeURIComponent(filename);
 }
 
-// Close modal when clicking the X
-closeBtn.onclick = function() {
-   modal.style.display = 'none';
+function viewGCashScreenshot(filename) {
+   gcashModal.style.display = 'block';
+   gcashModalImg.src = '../uploaded_gcash/' + encodeURIComponent(filename);
 }
 
-// Close modal when clicking outside of it
+// Close modals when clicking the X
+for (let i = 0; i < closeBtns.length; i++) {
+   closeBtns[i].onclick = function() {
+      designModal.style.display = 'none';
+      gcashModal.style.display = 'none';
+   }
+}
+
+// Close modals when clicking outside of them
 window.onclick = function(event) {
-   if (event.target == modal || event.target == document.getElementById('approvalModal')) {
-      modal.style.display = 'none';
+   if (event.target == designModal || event.target == gcashModal || event.target == document.getElementById('approvalModal')) {
+      designModal.style.display = 'none';
+      gcashModal.style.display = 'none';
       closeApprovalModal();
    }
 }
 
-// Close modal with Escape key
+// Close modals with Escape key
 document.addEventListener('keydown', function(event) {
    if (event.key === 'Escape') {
-      modal.style.display = 'none';
+      designModal.style.display = 'none';
+      gcashModal.style.display = 'none';
       closeApprovalModal();
    }
 });
