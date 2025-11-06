@@ -9,14 +9,20 @@ if(!isset($admin_id)){
    header('location:admin_login.php');
 }
 
-// Search functionality
+// Function to highlight search terms
+function highlightSearchTerm($text, $search) {
+   if(empty($search)) return $text;
+   $pattern = '/(' . preg_quote($search, '/') . ')/i';
+   return preg_replace($pattern, '<span class="highlight">$1</span>', $text);
+}
+
+// Search functionality - ONLY in name field
 $search_query = '';
 if(isset($_GET['search']) && !empty($_GET['search'])) {
    $search_query = $_GET['search'];
-   $select_account = $conn->prepare("SELECT * FROM `users` 
-                                   WHERE name LIKE ? OR email LIKE ? OR number LIKE ? OR address LIKE ?");
+   $select_account = $conn->prepare("SELECT * FROM `users` WHERE name LIKE ?");
    $search_param = "%$search_query%";
-   $select_account->execute([$search_param, $search_param, $search_param, $search_param]);
+   $select_account->execute([$search_param]);
 } else {
    $select_account = $conn->prepare("SELECT * FROM `users`");
    $select_account->execute();
@@ -205,6 +211,14 @@ if(isset($_GET['search']) && !empty($_GET['search'])) {
          background: #f8f9fa;
          position: relative;
          z-index: 1;
+      }
+
+      /* Highlight search results */
+      .highlight {
+         background-color: #fff3cd;
+         padding: 2px 4px;
+         border-radius: 3px;
+         font-weight: bold;
       }
 
       /* Modal Styles */
@@ -420,7 +434,7 @@ if(isset($_GET['search']) && !empty($_GET['search'])) {
    <div class="search-container">
       <form method="GET" action="" style="display: flex; gap: 10px; width: 100%; max-width: 600px; align-items: center;">
          <input type="text" name="search" class="search-box" 
-                placeholder="Search users by name, email, phone, or address..." 
+                placeholder="Search users by name..." 
                 value="<?= htmlspecialchars($search_query) ?>">
          <button type="submit" class="search-btn">
             <i class="fas fa-search"></i> Search
@@ -480,11 +494,11 @@ if(isset($_GET['search']) && !empty($_GET['search'])) {
                '<?= addslashes($fetch_accounts['valid_id']); ?>'
             )">
                <td><?= $fetch_accounts['id']; ?></td>
-               <td><?= $fetch_accounts['name']; ?></td>
+               <td><?= !empty($search_query) ? highlightSearchTerm($fetch_accounts['name'], $search_query) : $fetch_accounts['name']; ?></td>
                <td><?= $fetch_accounts['email']; ?></td>
                <td><?= $fetch_accounts['number']; ?></td>
                <td class="address-cell" title="<?= htmlspecialchars($address) ?>">
-                  <?= htmlspecialchars($address) ?>
+                  <?= htmlspecialchars($address); ?>
                </td>
                <td>
                   <?php if (!empty($fetch_accounts['valid_id'])): ?>
